@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>高德 GCJ-02 坐标拾取（本地校准）</title>
+    <style>
+      body {
+        font-family: ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+        margin: 16px;
+        max-width: 900px;
+      }
+      #map {
+        width: 100%;
+        height: 480px;
+        height: min(480px, 70vh);
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        margin-top: 12px;
+        touch-action: none;
+      }
+      #out {
+        margin-top: 14px;
+        padding: 12px;
+        background: #f4f6fa;
+        border-radius: 8px;
+        font-size: 15px;
+        line-height: 1.6;
+        word-break: break-all;
+      }
+      .hint {
+        color: #555;
+        font-size: 13px;
+        margin-top: 8px;
+      }
+      code {
+        background: #eee;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      label.block {
+        display: block;
+        margin: 6px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>在地图上点击 → 读取 GCJ-02 经纬度</h2>
+    <p>
+      用于填 <code>geo_reference.json</code>、对 POI。Key / 安全密钥只在你的浏览器里用，不会发到本项目后端。
+    </p>
+    <label class="block"
+      >高德 Key <input id="key" type="password" size="42" autocomplete="off" placeholder="需开通 Web端(JS API)"
+    /></label>
+    <label class="block"
+      >安全密钥 securityJsCode（<b>若地图能显示但点击没反应，此项必填</b>）
+      <input id="sec" type="password" size="42" autocomplete="off" placeholder="控制台 Key 设置里与 Key 成对的安全密钥" />
+    </label>
+    <button type="button" id="load">加载地图</button>
+    <p class="hint">
+      若地图白屏：打开
+      <a href="https://console.amap.com/dev/key/app" target="_blank" rel="noopener">高德控制台</a>，为该 Key 勾选「<b>Web端(JS API)</b>」，安全设置里加上 <code>localhost</code> 或
+      <code>http://localhost:3000</code>。
+    </p>
+    <div id="map"></div>
+    <div id="out">加载地图后，在任意位置单击，此处显示 经度、纬度（GCJ-02）。</div>
+    <p class="hint">
+      也可不用本页：打开
+      <a href="https://ditu.amap.com/" target="_blank" rel="noopener">ditu.amap.com</a>
+      搜索地点；拾取坐标以本页或 Web 服务接口为准最稳。
+    </p>
+
+    <script>
+      const loadBtn = document.getElementById("load");
+      const out = document.getElementById("out");
+      const keyInput = document.getElementById("key");
+      const secInput = document.getElementById("sec");
+
+      /** @type {import("https://webapi.amap.com/maps?v=2.0").Map | null} */
+      let pickMap = null;
+
+      function destroyPickMap() {
+        if (pickMap) {
+          try {
+            pickMap.destroy();
+          } catch (_) {}
+          pickMap = null;
+        }
+        const el = document.getElementById("map");
+        if (el) el.innerHTML = "";
+      }
+
+      function readLngLatFromClick(map, e) {
+        const ll = e && e.lnglat;
+        if (ll && typeof ll.getLng === "function") {
+          return { lng: ll.getLng(), lat: ll.getLat() };
+        }
+        if (ll && typeof ll.lng === "number" && typeof ll.lat === "number") {
+          return { lng: ll.lng, lat: ll.lat };
+        }
+        if (e && e.pixel && map && typeof map.containerToLngLat === "function") {
+          const c = map.containerToLngLat(e.pixel);
+          if (c && typeof c.getLng === "function") {
+            return { lng: c.getLng(), lat: c.getLat() };
+          }
+        }
+        return null;
+      }
+
+      /** 高德通过全局 callback 调用，保证脚本就绪后再建图 */
+      window.__amapPickerAfterLoad = function () {
+        try {
+          destroyPickMap();
+          if (typeof AMap === "undefined") {
+            out.textContent = "AMap 未定义，请检查 Key / 安全密钥是否正确。";
+            return;
+          }
+          pickMap = new AMap.Map("map", {
+            zoom: 16,
+            center: [121.65771, 31.14194],
+            viewMode: "2D",
+            dragEnable: true,
+            zoomEnable: true,
+            doubleClickZoom: true,
+          });
+
+          pickMap.on("click", (e) => {
+            try {
+              const r = readLngLatFromClick(pickMap, e);
+              if (!r || !Number.isFinite(r.lng) || !Number.isFinite(r.lat)) {
+                out.textContent =
+                  "未能从点击事件解析经纬度。请填「安全密钥」后重新加载地图，或按 F12 看控制台报错。";
+                console.warn("amap click ev", e);
+                return;
+              }
+              const lng = r.lng;
+              const lat = r.lat;
+              out.innerHTML =
+                "<b>GCJ-02</b><br>经度 lng: <code>" +
+                lng.toFixed(6) +
+                "</code><br>纬度 lat: <code>" +
+                lat.toFixed(6) +
+                "</code><br><br>填 geo_reference 时用：<code>anchorLngGCJ</code> = 经度，<code>anchorLatGCJ</code> = 纬度。";
+            } catch (err) {
+              console.error(err);
+              out.textContent = "处理点击时出错：" + (err && err.message ? err.message : String(err));
+            }
+          });
+
+          pickMap.on("complete", function () {
+            out.textContent = "地图已就绪：请单击地图任意位置拾取坐标。";
+          });
+        } catch (err) {
+          console.error(err);
+          out.textContent = "初始化地图失败：" + (err && err.message ? err.message : String(err));
+        }
+      };
+
+      loadBtn.addEventListener("click", () => {
+        const key = keyInput.value.trim();
+        const sec = secInput.value.trim();
+        if (!key) {
+          alert("请先输入 Key");
+          return;
+        }
+
+        destroyPickMap();
+
+        document.querySelectorAll("script[data-amap-loader]").forEach((n) => n.remove());
+
+        if (sec) {
+          window._AMapSecurityConfig = { securityJsCode: sec };
+        } else {
+          try {
+            delete window._AMapSecurityConfig;
+          } catch (_) {
+            window._AMapSecurityConfig = undefined;
+          }
+        }
+
+        out.textContent = "正在加载高德脚本…";
+        const s = document.createElement("script");
+        s.dataset.amapLoader = "1";
+        s.src =
+          "https://webapi.amap.com/maps?v=2.0&key=" +
+          encodeURIComponent(key) +
+          "&callback=__amapPickerAfterLoad";
+        s.onerror = () => {
+          out.textContent = "脚本加载失败：检查网络、Key、是否已配安全域名 localhost。";
+        };
+        document.head.appendChild(s);
+      });
+    </script>
+  </body>
+</html>

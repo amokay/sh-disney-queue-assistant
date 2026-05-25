@@ -1,0 +1,19 @@
+{
+  "scenarios": {
+    "hot_drop": {
+      "label": "热门项目降温（tron 90→30）",
+      "waitOverrides": { "tron": 30 },
+      "description": "用于演示机会项与重算"
+    },
+    "normal": {
+      "label": "恢复默认排队",
+      "waitOverrides": {},
+      "closedAttractions": []
+    },
+    "soaring_closed": {
+      "label": "翱翔临时关闭",
+      "waitOverrides": {},
+      "closedAttractions": ["soaring"]
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "park_id": "ddc4357c-c148-4b36-9888-07894fe75e83",
+  "api_base": "https://api.themeparks.wiki/v1",
+  "attractions": {
+    "tron": "72d2c957-0280-4bfa-b2fc-5c70913a613b",
+    "soaring": "4c72fb0a-b1b1-409b-8d7b-7182e95ac237",
+    "pirates": "87e0fa71-e0e2-4af9-a175-3569b7880680",
+    "thunder": "af87332e-f54c-401a-abbd-d1560e173018",
+    "pooh": "8dede135-9a2e-4fb1-9470-4e493c96db9c",
+    "mine": "d0e8c1f9-1fab-4081-bb7d-920815f28aa3",
+    "buzz": "8a7b5eb4-9e3e-463b-af65-395b392ebc6f",
+    "jet-packs": "1eb2a711-ab84-4bbf-b351-ce2668861cd5",
+    "stitch-encounter": "49d7604a-61b7-4b99-835e-3349673ef745",
+    "voyage-crystal-grotto": "73d08894-9a00-49ee-bd4a-9fb0979d9a65",
+    "peter-pan": "75aaf016-29ce-4a74-b5c2-d25876d34a6a",
+    "hunny-pot-spin": "a1263174-68f3-4207-9c89-cb53860e1e0a",
+    "fantasia-carousel": "a5d3aff4-6f33-4347-bb95-cd58c34eacc1",
+    "alice-maze": "ecd7c9fe-bcf1-4401-8c1a-287eb5ac3f4c",
+    "dumbo": "57505d8a-1b5d-490e-82bd-1edf38505bfe",
+    "explorer-canoes": "eef91f74-0d4e-4f58-bdc9-3236306f6707",
+    "shipwreck-shore": "7a5c957e-9176-4395-8b8e-a1e0999511f2",
+    "camp-discovery": "9914dc09-741b-4df6-95e0-c260cfb6e998",
+    "slinky-dog-spin": "6d4f514e-1557-4d7b-942a-83454650365c",
+    "zootopia-hot-pursuit": "1bdf8715-64fd-4353-a1ad-5fe9b1591973"
+  }
+}

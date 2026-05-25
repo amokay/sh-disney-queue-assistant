@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "name": "shanghai-disney-twin",
+  "scripts": {
+    "start": "npm --prefix backend start",
+    "dev": "npm --prefix backend run dev",
+    "sync-amap": "npm --prefix backend run sync-amap --",
+    "sync-amap-popular": "npm --prefix backend run sync-amap-popular --",
+    "sync-amap-seed": "npm --prefix backend run sync-amap-seed --"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.3.0",
+    "gltf-pipeline": "^4.3.1"
+  }
+}

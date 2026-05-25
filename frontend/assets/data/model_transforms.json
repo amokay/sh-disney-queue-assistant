@@ -1,0 +1,130 @@
+{
+  "rules": [
+    {
+      "match": "ground",
+      "position": [
+        0,
+        -1,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 3
+    },
+    {
+      "match": "Main_castle",
+      "position": [
+        -23.550396429517647,
+        0.7,
+        -43.26499782406449
+      ],
+      "rotationDeg": [
+        0,
+        45,
+        0
+      ],
+      "scale": 0.5
+    },
+    {
+      "match": "landmarks/02_seven-dwarfs-mine-train",
+      "position": [
+        -22.71905595175705,
+        0.5,
+        -59.42928541249386
+      ],
+      "rotationDeg": [
+        0,
+        50,
+        0
+      ],
+      "scale": 0.2
+    },
+    {
+      "match": "landmarks/03_caribbean-pirates",
+      "position": [
+        -5.12,
+        0.5,
+        -63.94
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 0.18
+    },
+    {
+      "match": "landmarks/04_tron-lightcycle",
+      "position": [
+        -50.63,
+        0.5,
+        -25
+      ],
+      "rotationDeg": [
+        0,
+        -90,
+        0
+      ],
+      "scale": 0.18
+    },
+    {
+      "match": "landmarks/05_fantasia-carousel",
+      "position": [
+        -8.743939729218862,
+        1.2,
+        -32.8489633299035
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 0.25
+    },
+    {
+      "match": "landmarks/06_shipwreck-shore",
+      "position": [
+        -2.9,
+        0.5,
+        -55.7
+      ],
+      "rotationDeg": [
+        0,
+        25,
+        0
+      ],
+      "scale": 0.17
+    },
+    {
+      "match": "landmarks/07_alice-maze",
+      "position": [
+        -23.5,
+        0.5,
+        -53.2
+      ],
+      "rotationDeg": [
+        0,
+        50,
+        0
+      ],
+      "scale": 0.3
+    },
+    {
+      "match": "landmarks/08_canoe",
+      "position": [
+        0,
+        0.5,
+        -45
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 0.25
+    }
+  ]
+}

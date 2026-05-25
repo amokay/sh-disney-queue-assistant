@@ -1,0 +1,20 @@
+/**
+ * 所有 `/api/*` 请求共用的前缀。
+ *
+ * - 若页面与后端同源（推荐：`http://localhost:3000` 打开），保持 `""` 即可。
+ * - 若用 Live Server / 其它端口打开本地 HTML，自动指向本机 `:3000` 上的 Express。
+ * - 线上前后端分离时，可改为显式域名，例如 `https://api.example.com`。
+ */
+function inferApiBase() {
+  if (typeof window === "undefined" || !window.location) return "";
+  const { hostname, port, protocol } = window.location;
+  if (protocol === "file:") return "http://localhost:3000";
+  const isLocal =
+    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+  if (!isLocal) return "";
+  const effectivePort = port || (protocol === "https:" ? "443" : "80");
+  if (effectivePort === "3000") return "";
+  return `http://${hostname}:3000`;
+}
+
+export const API_BASE = inferApiBase();

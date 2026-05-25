@@ -1,0 +1,17 @@
+{
+  "location": {
+    "minUpdateIntervalMs": 12000,
+    "arrivedRadiusScene": 6,
+    "headingRadiusScene": 25
+  },
+  "opportunity": {
+    "maxWaitMinutes": 45,
+    "minDropRatio": 0.35,
+    "minBaselineSamples": 2,
+    "maxWalkMinutes": 60,
+    "scoreBoost": 120
+  },
+  "height": {
+    "warnOnMustPlayConflict": true
+  }
+}

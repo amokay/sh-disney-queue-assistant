@@ -1,0 +1,13 @@
+{
+  "city": "上海",
+  "around": {
+    "location": "121.662232,31.139219",
+    "radius": 3500,
+    "keywords": "上海迪士尼度假区",
+    "types": "",
+    "maxTotal": 800,
+    "delayMs": 220,
+    "offset": 25
+  },
+  "_comment": "复制为 amap_pois_sync.json 后按需修改。location 默认可省略，脚本会用 geo_reference.json 锚点。types 见高德 POI 分类码；留空则不限类型（结果可能很多）。"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "disney-map-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "dev:watch": "node --watch server.js",
+    "sync-transform-stubs": "node ./scripts/sync-model-transform-stubs.mjs",
+    "apply-geo": "echo '' && echo '[apply-geo] running…' && node ./scripts/apply-geo-positions.mjs && echo '[apply-geo] done' && echo ''",
+    "sync-glb-poi": "node ./scripts/sync-glb-transforms-from-amap-poi.mjs",
+    "sync-amap": "node ./scripts/sync-amap-attractions.mjs",
+    "sync-amap-popular": "node ./scripts/sync-amap-attractions.mjs file ./data/disney-popular-poi-keywords.txt",
+    "sync-amap-seed": "node ./scripts/sync-amap-attractions.mjs seed"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^3.3.2",
+    "three": "^0.170.0"
+  }
+}

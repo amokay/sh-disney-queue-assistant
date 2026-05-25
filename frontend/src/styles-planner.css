@@ -1,0 +1,1318 @@
+/* 底部悬浮面板：不挡 3D 地图 */
+.planner-dock {
+  /* 底部面板约占竖屏 1/3，其余留给 3D 地图；内容在面板内滚动 */
+  --planner-dock-height: 33.33vh;
+  --planner-dock-height: 33.33dvh;
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 20000;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 16px));
+  pointer-events: none;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.planner-dock__handle {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  /* 提升可点击/拖动区高度，避免移入 panel 后过窄 */
+  padding: 10px 0 6px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  cursor: grab;
+  pointer-events: auto;
+  /* 面板内部内容可滚动时，手柄保持粘附在顶部，始终可被拖动 */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  /* 关闭浏览器默认竖向滑动手势，确保 pointermove 接管拖动 */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.planner-dock__handle:active {
+  cursor: grabbing;
+}
+
+.planner-dock__handle-bar {
+  width: 40px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.planner-dock__panel {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px 16px 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: none;
+  background: rgba(30, 30, 50, 0.92);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  transition:
+    height 0.28s ease,
+    max-height 0.28s ease,
+    opacity 0.2s ease;
+}
+
+.planner-dock__panel::-webkit-scrollbar {
+  display: none;
+}
+
+/* 展开态：放宽 max-height 以容纳横滑卡片 + 必玩挑战模块；
+   若内容仍超出（底部"今日战绩"等标题），允许面板内部纵向滚动，
+   保证横滑卡片区不被压缩，必玩挑战自然显示在卡片下方。 */
+.planner-dock.is-open .planner-dock__panel {
+  max-height: 380px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 面板为 column flex 布局，默认 flex-shrink:1 会在内容超出时压缩各子块。
+   显式锁定横滑卡片区、必玩挑战、章节标题的高度，保持其原始展示，
+   让面板整体滚动而不是单块塌陷。 */
+.planner-dock.is-open .planner-dock__scroll,
+.planner-dock.is-open .planner-dock__mustplay,
+.planner-dock.is-open .planner-dock__stats,
+.planner-dock.is-open .planner-dock__section-title,
+.planner-dock.is-open .other-attractions__scroll {
+  flex-shrink: 0;
+}
+
+/* 全展开态（拖动上拉后进入）：高度自适应内容，最高不超过 800px，
+   且不超过视口高度，避免顶部手柄被推到视口外；
+   同时允许内部滚动，确保内容超出时仍可访问到底部标题。 */
+.planner-dock.is-full .planner-dock__panel {
+  height: auto;
+  max-height: min(800px, calc(100vh - 8px));
+  max-height: min(800px, calc(100dvh - 8px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.planner-dock.is-collapsed .planner-dock__panel {
+  height: 100px;
+  max-height: 100px;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.planner-dock.is-mid .planner-dock__panel {
+  height: 280px;
+  max-height: 280px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 折叠态：仅展示 handle + 标题 + subtitle + 一张卡片区域，
+   隐藏 scroll 之后的所有兄弟节点（必玩挑战、今日战绩）。 */
+.planner-dock.is-collapsed .planner-dock__scroll ~ * {
+  display: none;
+}
+
+/* 全展开态下，横滑卡片区按内容自然高度展示，把剩余高度让给底部标题，
+   而非用 flex:1 抢占整段剩余空间，避免"必玩挑战"/"今日战绩"被挤到面板外。 */
+.planner-dock.is-full .planner-dock__scroll,
+.planner-dock.is-full .other-attractions__scroll {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+/* 游玩导览面板内容样式 */
+.planner-dock__section-title {
+  display: flex;
+  align-items: center;
+  margin: 12px 14px 4px;
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.planner-dock__subtitle-dots {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.planner-dock__scroll {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  overflow-x: auto;
+  gap: 10px;
+  padding: 4px 14px 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.planner-dock__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.planner-dock__scroll .detail__card {
+  position: relative;
+  top: auto;
+  right: auto;
+  visibility: visible;
+  flex: 0 0 auto;
+  width: 300px;
+  max-height: none;
+  overflow-y: visible;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+/* 手动加入推荐的卡片：紫色高亮背景，区别于系统自动推荐卡片 */
+.planner-dock__scroll .detail__card.is-manual-recommend {
+  background: rgba(139, 92, 246, 0.1);
+}
+
+/* 推荐卡片删除按钮 */
+.detail__card-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.detail__card-remove:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.planner-dock__scroll .detail__card.is-active {
+  border-color: rgba(139, 92, 246, 0.7);
+  background: rgba(12, 14, 20, 0.95);
+  box-shadow: 0 0 12px rgba(100, 180, 255, 0.15);
+}
+
+/* 卡片被选中后移动到首位时，从右侧平移滑入；不使用淡入/缩放，避免容器溢出 */
+@keyframes cardSlideToFirst {
+  from { transform: translateX(80px); }
+  to { transform: translateX(0); }
+}
+
+.planner-dock__scroll .detail__card.is-sliding-in {
+  animation: cardSlideToFirst 0.3s ease-out;
+}
+
+.planner-dock__scroll .detail__card:active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.planner-dock__scroll .detail__actions {
+  display: flex;
+  margin-top: 8px;
+  gap: 8px;
+}
+
+.planner-dock .detail__card .btn--secondary {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.planner-dock .detail__card.is-active .btn--secondary {
+  background: rgba(139, 92, 246, 0.6);
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.planner-dock .detail__card:not(.is-active) .btn--secondary:active {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.planner-dock .detail__card:not(.is-active) .btn--primary {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.planner-dock .detail__card.is-active .btn--primary {
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.planner-dock .detail__card:not(.is-active) .btn--secondary {
+  border: none;
+}
+
+.planner-dock__scroll .detail__actions .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* "导航中"按钮：光晕滑过动效（用 .is-navigating class 代替 :disabled 以保持可点击） */
+@keyframes plannerShimmerOnce {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.planner-dock__scroll .detail__actions .btn--primary.is-navigating {
+  position: relative;
+  overflow: hidden;
+  opacity: 0.5;
+  cursor: pointer;
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.planner-dock__scroll .detail__actions .btn--primary.is-navigating::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: plannerShimmerOnce 1.2s ease-in-out infinite;
+  animation-iteration-count: infinite;
+}
+
+.btn--secondary {
+  border-color: rgba(139, 92, 246, 0.5);
+  background: rgba(139, 92, 246, 0.6);
+  color: #fff;
+  padding: 8px 20px;
+  min-width: 88px;
+  white-space: nowrap;
+}
+
+.btn--secondary:active {
+  background: rgba(139, 92, 246, 0.8);
+}
+
+.planner-dock__scroll .detail__title {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail__played-count {
+  display: inline-block;
+  margin-left: auto;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
+  letter-spacing: 0px;
+  background: transparent;
+  padding: 0px 6px;
+  border-radius: 4px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.planner-dock__scroll .detail__zone {
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.planner-dock__scroll .detail__wait {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.planner-dock__scroll .detail__dist {
+  margin-top: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.planner-dock__card-next {
+  display: inline-block;
+  font-size: 10px;
+  color: #000;
+  font-weight: 600;
+  letter-spacing: 0px;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 0px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ── 暂停开放标签 ── */
+.planner-dock__card-next.is-closed {
+  background: rgba(239, 68, 68, 0.7);
+  color: #fff;
+}
+
+/* ── 暂停开放排队时长文字（红色） ── */
+.detail__wait.is-closed {
+  color: rgba(239, 68, 68, 1);
+}
+
+/* ── 已关闭状态排队时长文字（灰色） ── */
+.detail__wait.wait-color--closed {
+  color: #999;
+  font-style: italic;
+}
+
+.planner-dock__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.planner-dock__eyebrow {
+  margin: 0 0 2px;
+  font-size: 11px;
+  color: rgba(255, 224, 102, 0.9);
+  letter-spacing: 0.04em;
+}
+
+.planner-dock__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.planner-dock__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.planner-dock__body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px 12px 12px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 嵌在 dock 内：不用全屏 absolute，避免高度塌陷 */
+.planner-dock__body > .planner-screen {
+  position: relative;
+  inset: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: transparent;
+}
+
+.planner-dock__body .planner-screen__inner {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0 2px 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.planner-dock__body .planner-screen__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.planner-dock__body .planner-screen__foot {
+  flex-shrink: 0;
+  margin-top: 8px;
+  padding-top: 4px;
+}
+
+.planner-dock__body .planner-chips--scroll {
+  max-height: none;
+  overflow: visible;
+}
+
+.planner-dock-hint {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.planner-lbs-tip {
+  margin: 6px 0 10px;
+  font-size: 12px;
+}
+
+.planner-mode-toggle {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.planner-mode-toggle__btn {
+  padding: 5px 10px;
+  font-size: 11px;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+}
+
+.planner-mode-toggle__btn.is-active {
+  background: rgba(59, 130, 246, 0.45);
+  color: #fff;
+}
+
+.planner-dock__foot,
+.planner-screen__foot {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.btn--icon {
+  min-width: 36px;
+  padding: 6px 10px;
+}
+
+/* Step1 游玩规划 H5（旧全屏，保留兼容） */
+.planner-app {
+  position: fixed;
+  inset: 0;
+  z-index: 25000;
+  pointer-events: none;
+  display: none;
+}
+
+.planner-app.is-visible {
+  display: block;
+  pointer-events: auto;
+}
+
+.planner-screen {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 80% at 50% 0%, #3d3f5c 0%, #1a1b24 55%, #12131a 100%);
+  color: #fff;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.planner-screen__inner {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.planner-screen__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.planner-screen__head h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.planner-screen__body {
+  flex: 1;
+}
+
+.planner-screen__foot {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.planner-screen__foot--stack {
+  flex-direction: column;
+}
+
+.planner-home h1 {
+  font-size: 28px;
+  line-height: 1.2;
+  margin: 24px 0 12px;
+}
+
+.planner-lead {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.planner-muted {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+}
+
+.planner-field {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.planner-field input,
+.planner-field select {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  box-sizing: border-box;
+}
+
+.planner-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.planner-chip {
+  position: relative;
+  padding: 10px 14px 12px;
+  min-height: 44px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.planner-chip--play {
+  flex: 1 1 calc(50% - 4px);
+  min-width: calc(50% - 4px);
+  border-radius: 12px;
+  font-weight: 600;
+  text-align: left;
+  padding-right: 26px;
+}
+
+.planner-chip.is-on::after {
+  content: "✓";
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffe066;
+  pointer-events: none;
+}
+
+.planner-chip.is-disabled::after {
+  display: none;
+}
+
+.planner-chip--wide {
+  flex: 1 1 calc(50% - 4px);
+  min-width: calc(50% - 4px);
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.planner-section {
+  margin-bottom: 16px;
+}
+
+.planner-section-label {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.planner-time-badge {
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 224, 102, 0.95);
+  background: rgba(255, 224, 102, 0.08);
+  border: 1px solid rgba(255, 224, 102, 0.2);
+}
+
+.planner-chips--scroll {
+  max-height: 280px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.planner-screen__head--compact h1 {
+  font-size: 18px;
+}
+
+.btn--block {
+  width: 100%;
+  min-height: 48px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.planner-chip.is-on {
+  border-color: #ffe066;
+  background: rgba(255, 224, 102, 0.18);
+}
+
+.planner-step-badge {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.planner-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.planner-stats > div {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  text-align: center;
+}
+
+.planner-stats b {
+  display: block;
+  font-size: 22px;
+}
+
+.planner-stats span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.planner-ride-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.planner-ride-card {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 4px 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.planner-ride-card__order {
+  grid-row: span 2;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 224, 102, 0.2);
+  color: #ffe066;
+  font-weight: 800;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.planner-ride-card__zone {
+  display: block;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.planner-ride-card__meta {
+  grid-column: 2;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.planner-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(255, 100, 100, 0.25);
+  font-size: 11px;
+}
+
+.planner-next-card {
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 224, 102, 0.35);
+  margin-bottom: 14px;
+}
+
+.planner-next-card h2 {
+  margin: 4px 0;
+  font-size: 22px;
+}
+
+.planner-next-card__label {
+  margin: 0;
+  font-size: 12px;
+  color: #ffe066;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.planner-cost-list {
+  margin: 12px 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+.planner-reason {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.planner-inpark-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.planner-warn {
+  color: #fbbf24;
+  font-size: 13px;
+}
+
+.planner-summary-box {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+}
+
+.planner-mock {
+  margin-top: 16px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.planner-mock-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn--block {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.btn--small {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.planner-fab {
+  position: fixed;
+  left: 14px;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 25001;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 224, 102, 0.4);
+  background: rgba(18, 20, 32, 0.92);
+  color: #ffe066;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.planner-back {
+  flex-shrink: 0;
+}
+
+.planner-chip.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.planner-loc-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 13px;
+}
+
+.planner-loc-status {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.planner-reason-box {
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.28);
+}
+
+.planner-reason-box__title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(147, 197, 253, 0.95);
+}
+
+.planner-reason-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.planner-reason-list li {
+  margin-bottom: 4px;
+}
+
+.planner-map-hint {
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.planner-next-card--opp {
+  border-color: rgba(100, 220, 160, 0.55);
+}
+
+.planner-opp-section {
+  margin: 14px 0;
+}
+
+.planner-opp-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #86efac;
+}
+
+.planner-opp-card {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: rgba(34, 80, 60, 0.35);
+  border: 1px solid rgba(134, 239, 172, 0.25);
+}
+
+.planner-opp-card .btn {
+  margin-top: 8px;
+}
+
+/* 推荐理由 */
+.recommend__reason {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: -4px 14px 8px;
+  text-align: left;
+}
+
+/* 必玩挑战模块 */
+.planner-dock__mustplay {
+  padding: 8px 16px 16px;
+}
+
+.mustplay__dots {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 必玩挑战进度计数：x/6，达成 6/6 时切换为「挑战成功」紫色高亮 */
+.mustplay__count {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: 6px;
+}
+
+.mustplay__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(139, 92, 246, 0.4);
+  background: transparent;
+  box-sizing: border-box;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.mustplay__dot.is-done {
+  background: rgba(139, 92, 246, 1);
+  border-color: rgba(139, 92, 246, 1);
+}
+
+.mustplay__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.mustplay__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+.mustplay__item.is-done {
+  background: rgba(139, 92, 246, 0.2);
+  color: #fff;
+}
+
+.mustplay__check {
+  display: none;
+  color: rgba(139, 92, 246, 1);
+  font-weight: 700;
+}
+
+.mustplay__item.is-done .mustplay__check {
+  display: inline;
+}
+
+/* ── 今日战绩统计模块 ── */
+.stats__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  margin-top: 4px;
+}
+
+.stats__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stats__header .planner-dock__section-title {
+  margin: 0;
+}
+
+.stats__medal {
+  width: 36px;
+  height: 44px;
+  line-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-top: 10px;
+}
+
+.stats__medal svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 空奖牌时不占视觉位置 */
+.stats__medal:empty {
+  width: 0;
+  height: 0;
+}
+
+.stats__played-title {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: 6px;
+}
+
+.planner-dock__stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 12px;
+  padding: 16px 12px 20px;
+}
+
+.stats__countdown {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: left;
+}
+
+.stats__played {
+  padding-left: 0；
+}
+
+.stats__played-summary {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: left;
+}
+
+.stats__played-count,
+.stats__played-total,
+.stats__played-pct {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(139, 92, 246, 1);
+  margin: 0 2px;
+}
+
+.stats__played-list {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 4px;
+  line-height: 1.6;
+  text-align: left;
+}
+
+/* 今日战绩空状态提示 */
+.stats__empty {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: left;
+  padding: 4px 0;
+}
+
+/* 偏好采集时压缩 dock 顶栏，把高度留给芯片区 */
+.planner-dock--compact-head .planner-dock__eyebrow {
+  display: none;
+}
+
+.planner-dock--compact-head .planner-dock__head {
+  padding-bottom: 4px;
+}
+
+.planner-dock--compact-head .planner-dock__title {
+  font-size: 15px;
+}
+
+/* 其他项目模块 —— 横向滑动卡片列表，复用 .detail__card 基础样式，仅收窄宽度 */
+.other-attractions__scroll {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  overflow-x: auto;
+  gap: 10px;
+  padding: 4px 14px 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.other-attractions__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.other-attractions__scroll .detail__card {
+  position: relative;
+  top: auto;
+  right: auto;
+  visibility: visible;
+  flex: 0 0 auto;
+  width: 220px; /* 推荐卡片 300px，这里缩约 27% */
+  max-height: none;
+  overflow-y: visible;
+  cursor: pointer;
+  /* 在默认 rgba(12,14,20,0.86) 基础上整体调亮，让其他项目卡片视觉更明亮 */
+  background: rgba(32, 36, 48, 0.92);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.other-attractions__scroll .detail__card.is-active {
+  border-color: rgba(139, 92, 246, 0.7);
+  background: rgba(12, 14, 20, 0.95);
+  box-shadow: 0 0 12px rgba(100, 180, 255, 0.15);
+}
+
+.other-attractions__scroll .detail__card:active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.other-attractions__scroll .detail__title {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.other-attractions__scroll .detail__zone {
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.other-attractions__scroll .detail__wait {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.other-attractions__scroll .detail__dist {
+  margin-top: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.other-attractions__scroll .detail__actions {
+  display: flex;
+  margin-top: 8px;
+  gap: 8px;
+}
+
+.other-attractions__scroll .detail__actions .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.other-attractions__scroll .detail__actions .btn--primary.is-navigating {
+  position: relative;
+  overflow: hidden;
+  opacity: 0.5;
+  cursor: pointer;
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.other-attractions__scroll .detail__actions .btn--primary.is-navigating::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: plannerShimmerOnce 1.2s ease-in-out infinite;
+  animation-iteration-count: infinite;
+}
+
+/* 手机宽度 / DevTools 设备模拟 */
+@media (max-width: 768px) {
+  .planner-dock {
+    left: 0;
+    right: 0;
+    transform: none;
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  .planner-dock.is-open .planner-dock__panel {
+    border-radius: 18px 18px 0 0;
+  }
+
+  .planner-dock__head {
+    padding: 10px 12px 6px;
+  }
+
+  .planner-dock__title {
+    font-size: 16px;
+  }
+
+  .planner-dock__head-actions {
+    gap: 6px;
+  }
+
+  .planner-dock__body .planner-screen__head h1 {
+    font-size: 17px;
+  }
+
+  .planner-dock__body .planner-section-label {
+    font-size: 14px;
+  }
+
+  .planner-dock__body .planner-chip {
+    font-size: 15px;
+    padding: 11px 15px;
+  }
+}
+
+/* ── 机会推荐 Toast ── */
+.opportunity-toast {
+  position: fixed;
+  top: 100px;
+  left: -320px;
+  width: 280px;
+  padding: 14px 16px;
+  background: rgba(240, 240, 245, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 10000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+.opportunity-toast.is-visible {
+  left: 20px;
+}
+.opportunity-toast__icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.opportunity-toast__content {
+  flex: 1;
+  min-width: 0;
+}
+.opportunity-toast__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.opportunity-toast__desc {
+  font-size: 12px;
+  color: rgba(0,0,0,0.85);
+  margin-top: 2px;
+}
