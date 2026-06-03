@@ -1,0 +1,29 @@
+# Aone Pages deployment
+pages:
+  stage: deploy
+  script:
+    - mkdir -p public
+    - cp frontend/index_babylon.html public/index_babylon.html
+    - cp frontend/index.html public/index_threejs.html
+    - cp -r frontend/src public/src
+    - cp -r frontend/assets public/assets
+    - cp -r frontend/calibration public/calibration
+    - |
+      cat > public/index.html << 'EOF'
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="refresh" content="0;url=index_babylon.html">
+      </head>
+      <body>
+        <script>window.location.href='index_babylon.html';</script>
+      </body>
+      </html>
+      EOF
+  artifacts:
+    paths:
+      - public
+  only:
+    - develop
+    - master
+    - main
