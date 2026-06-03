@@ -1,0 +1,10 @@
+{
+  "type": "node",
+  "cnpm": true,
+  "build": {
+    "command": "cd backend && npm install --production"
+  },
+  "start": {
+    "command": "cd backend && node server.js"
+  }
+}
