@@ -27,3 +27,4 @@ pages:
     - develop
     - master
     - main
+# Trigger CI pipeline
