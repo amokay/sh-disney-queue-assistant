@@ -133,7 +133,7 @@ function createArrowSpritesAlongCurve(curve, spacing = ARROW_SPACING) {
       map: tex,
       color: 0xffffff,
       transparent: true,
-      depthTest: true,
+      depthTest: false,
       depthWrite: false,
       sizeAttenuation: true,
     });
@@ -142,6 +142,7 @@ function createArrowSpritesAlongCurve(curve, spacing = ARROW_SPACING) {
     sp.scale.set(ARROW_SPRITE_SIZE, ARROW_SPRITE_SIZE, 1);
     sp.userData.tangent = tan.clone();
     sp.frustumCulled = false;
+    sp.renderOrder = 11;
     group.add(sp);
   }
   return group;
@@ -167,12 +168,77 @@ function addSegmentArrowSprites(group, segments) {
   }
 }
 
-/* ── 园区静态路网（白色道路）参数 ── */
-const PARK_ROAD_COLOR = 0xffffff;
-const PARK_ROAD_OPACITY = 0.88;
-const PARK_ROAD_TUBE_RADIUS = 0.45;
-const PARK_ROAD_TUBE_RADIAL_SEGMENTS = 10;
-const PARK_ROAD_Y = 0.8;
+/* ── 园区静态路网（黄色扁平贴地）参数 ── */
+const PARK_ROAD_COLOR = 0xf5c842;
+const PARK_ROAD_OPACITY = 0;
+const PARK_ROAD_HALF_WIDTH = 0.35;
+const PARK_ROAD_Y = 0.5;
+
+/**
+ * 沿路径点序列生成扁平带状（贴地）BufferGeometry。
+ * 对每个点计算 xz 平面前进方向，水平法线 (-dz, 0, dx) 偏移半宽得到左右顶点，
+ * 用左右顶点对组成索引三角条带。
+ * @param {THREE.Vector3[]} points
+ * @param {number} halfWidth
+ * @returns {THREE.BufferGeometry | null}
+ */
+function buildFlatRibbonGeometry(points, halfWidth) {
+  const n = points?.length || 0;
+  if (n < 2) return null;
+
+  const positions = new Float32Array(n * 2 * 3);
+  for (let i = 0; i < n; i++) {
+    const prev = points[Math.max(0, i - 1)];
+    const next = points[Math.min(n - 1, i + 1)];
+    let dx = next.x - prev.x;
+    let dz = next.z - prev.z;
+    const len = Math.hypot(dx, dz);
+    if (len > 1e-6) {
+      dx /= len;
+      dz /= len;
+    } else {
+      dx = 1;
+      dz = 0;
+    }
+    // 水平法线（左侧为正）
+    const nx = -dz;
+    const nz = dx;
+    const p = points[i];
+    const baseY = p.y;
+    const lx = p.x + nx * halfWidth;
+    const lz = p.z + nz * halfWidth;
+    const rx = p.x - nx * halfWidth;
+    const rz = p.z - nz * halfWidth;
+    const off = i * 6;
+    positions[off + 0] = lx;
+    positions[off + 1] = baseY;
+    positions[off + 2] = lz;
+    positions[off + 3] = rx;
+    positions[off + 4] = baseY;
+    positions[off + 5] = rz;
+  }
+
+  const indices = new Uint32Array((n - 1) * 6);
+  for (let i = 0; i < n - 1; i++) {
+    const a = i * 2;
+    const b = i * 2 + 1;
+    const c = (i + 1) * 2;
+    const d = (i + 1) * 2 + 1;
+    const o = i * 6;
+    indices[o + 0] = a;
+    indices[o + 1] = b;
+    indices[o + 2] = c;
+    indices[o + 3] = b;
+    indices[o + 4] = d;
+    indices[o + 5] = c;
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geom.setIndex(new THREE.BufferAttribute(indices, 1));
+  geom.computeVertexNormals();
+  return geom;
+}
 
 /**
  * 路线预览（智能规划）与花车巡游折线。
@@ -203,7 +269,7 @@ export class LineOverlays {
   }
 
   /**
-   * 加载并渲染园区固定路网（白色管道，贴近地面）。
+   * 加载并渲染园区固定路网（黄色扁平带，贴地）。
    * @param {Array<{ id?: string, points: Array<{ x: number, y?: number, z: number }> }>} roads
    */
   setParkRoads(roads) {
@@ -219,29 +285,19 @@ export class LineOverlays {
       const tempCurve = buildWalkCenterCurve(vecs);
       if (!tempCurve) continue;
 
-      // 边界裁剪
+      // 沿曲线密采并裁剪到园区边界，保持贴地高度
       const sampleCount = Math.max(48, vecs.length * 4);
       const sampled = tempCurve.getPoints(sampleCount).map(
         (v) => new THREE.Vector3(v.x, PARK_ROAD_Y, v.z)
       );
-      const clipped = clipPointsToPark(sampled);
+      const clipped = clipPointsToPark(sampled).map(
+        (v) => new THREE.Vector3(v.x, PARK_ROAD_Y, v.z)
+      );
       if (clipped.length < 2) continue;
 
-      const curve = clipped.length === 2
-        ? new THREE.LineCurve3(clipped[0], clipped[1])
-        : new THREE.CatmullRomCurve3(clipped, false, "centripetal", 0.5);
+      const geom = buildFlatRibbonGeometry(clipped, PARK_ROAD_HALF_WIDTH);
+      if (!geom) continue;
 
-      const tubularSegments = curve instanceof THREE.LineCurve3
-        ? Math.min(160, Math.max(12, Math.ceil(curve.v0.distanceTo(curve.v1) / 1.5)))
-        : Math.min(480, Math.max(48, clipped.length * 8));
-
-      const geom = new THREE.TubeGeometry(
-        curve,
-        tubularSegments,
-        PARK_ROAD_TUBE_RADIUS,
-        PARK_ROAD_TUBE_RADIAL_SEGMENTS,
-        false
-      );
       const mat = new THREE.MeshBasicMaterial({
         color: PARK_ROAD_COLOR,
         transparent: true,
@@ -253,7 +309,6 @@ export class LineOverlays {
       const mesh = new THREE.Mesh(geom, mat);
       mesh.frustumCulled = false;
       mesh.name = `park-road:${road.id || ""}`;
-      // 渲染顺序：高于地面但低于导航路线，确保路网始终可见
       mesh.renderOrder = 2;
       this.parkRoads.add(mesh);
     }
@@ -301,9 +356,10 @@ export class LineOverlays {
       (o) => new THREE.Vector3(o.position.x, yLift + (o.position.y || 0), o.position.z)
     );
     const geom = new THREE.BufferGeometry().setFromPoints(pts);
-    const mat = new THREE.LineBasicMaterial({ color: 0xffd166 });
+    const mat = new THREE.LineBasicMaterial({ color: 0xffd166, depthTest: false, depthWrite: false });
     const line = new THREE.Line(geom, mat);
     line.frustumCulled = false;
+    line.renderOrder = 10;
     this.route.add(line);
   }
 
@@ -343,10 +399,12 @@ export class LineOverlays {
       transparent: true,
       opacity: isStraight ? ROUTE_TUBE_STRAIGHT_OPACITY : ROUTE_TUBE_OPACITY,
       depthWrite: false,
+      depthTest: false,
     });
     const mesh = new THREE.Mesh(geom, mat);
     mesh.frustumCulled = false;
     mesh.name = "WalkTube";
+    mesh.renderOrder = 10;
     this.route.add(mesh);
     this._walkTube = mesh;
 

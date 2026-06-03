@@ -60,7 +60,7 @@ export const ALLOW_DISCOVER_ALL_GLBS = false;
  * 默认相机（设计师可只改数字，不用写代码逻辑）
  * 若仍看不到模型：把相机拉远，例如 position 三个数都改成 200～400 再试。
  */
-export const DEFAULT_CAMERA_POSITION = [14.5, 39.9, 34.5];
+export const DEFAULT_CAMERA_POSITION = [-2.9, 39.0, 39.1];
 /** OrbitControls 看向的点，一般对准场景中心略抬高 */
 export const DEFAULT_CAMERA_TARGET = [-10.3, -1.9, -31.8];
 

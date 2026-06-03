@@ -1,0 +1,20 @@
+{
+  "autoDiscover": true,
+  "pickRules": [
+    { "match": "landmarks/02_seven-dwarfs-mine-train", "pickableAttractionId": "mine" },
+    { "match": "seven-dwarfs-mine-train", "pickableAttractionId": "mine" },
+    { "match": "Main_castle", "pickableAttractionId": "castle" },
+    { "match": "castle", "pickableAttractionId": "castle" },
+    { "match": "landmarks/03_caribbean-pirates", "pickableAttractionId": "pirates" },
+    { "match": "caribbean-pirates", "pickableAttractionId": "pirates" },
+    { "match": "landmarks/04_tron-lightcycle", "pickableAttractionId": "tron" },
+    { "match": "tron-lightcycle", "pickableAttractionId": "tron" },
+    { "match": "landmarks/05_fantasia-carousel", "pickableAttractionId": "fantasia-carousel" },
+    { "match": "landmarks/06_shipwreck-shore", "pickableAttractionId": "shipwreck-shore" },
+    { "match": "shipwreck-shore", "pickableAttractionId": "shipwreck-shore" },
+    { "match": "landmarks/07_alice-maze", "pickableAttractionId": "alice-maze" },
+    { "match": "alice-maze", "pickableAttractionId": "alice-maze" },
+    { "match": "landmarks/08_canoe", "pickableAttractionId": "canoe" },
+    { "match": "canoe", "pickableAttractionId": "canoe" }
+  ]
+}

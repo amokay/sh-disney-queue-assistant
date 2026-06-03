@@ -19,17 +19,12 @@ const LEADER_RIBBON_WIDTH = 0.14;
 // CSS2DRenderer 容器位于 document.body 之下，统一在 document 层委托
 let __recommendDelegateBound = false;
 
-// 已加入「当前推荐项目」的 attraction id 集合。
-// 由 plannerApp 通过 setRecommendedIds 同步；buildHtml 据此判断是否渲染「加入推荐」按钮。
-let recommendedIds = new Set();
+// 已加入「当前推荐项目」的 id 集合，从 recommendedStore 共享获取
+import { getRecommendedIds, setRecommendedIds } from "./recommendedStore.js";
+export { setRecommendedIds };
 
-/**
- * 同步当前推荐列表的 attraction id，用于决定 wait-marker 是否显示「加入推荐」按钮。
- * @param {Iterable<string>} ids
- */
-export function setRecommendedIds(ids) {
-  recommendedIds = new Set(Array.from(ids || []).map((x) => String(x)));
-}
+// 本文件内部通过 getRecommendedIds() 访问 recommendedIds
+// （保持向下兼容：旧代码引用 recommendedIds 变量的地方通过 getter 获取）
 
 function ensureRecommendDelegate() {
   if (__recommendDelegateBound) return;
@@ -185,7 +180,7 @@ export function createWaitLabelOverlay(scene, getMerged, getRouteHighlightIds = 
     //  - 普通模式：focusedNormalId 匹配
     //  - 园内模式：expanded 状态（一次只有一个）
     const isSelected = mode === "expanded" || (mode === "normal" && a.id === focusedNormalId);
-    const showRecommendBtn = isSelected && !recommendedIds.has(String(a.id));
+    const showRecommendBtn = isSelected && !getRecommendedIds().has(String(a.id));
     const btnHtml = showRecommendBtn
       ? `<div class="wait-marker__btn-recommend" data-id="${aid}">加入推荐</div>`
       : "";

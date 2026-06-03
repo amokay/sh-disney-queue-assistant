@@ -31,7 +31,8 @@ import { showToast } from "./ui/toast.js";
 import { showLoading, hideLoading } from "./ui/loading.js";
 import { createWaitLabelOverlay } from "./waitLabels.js";
 import { bindCalibrationXZPick } from "./calibrationPick.js";
-import { bindLbsMapPick, enterManualPickMode } from "./lbsMapPick.js";
+import { bindLbsMapPick, enterManualPickMode, enterDrawRouteMode, enterEraseRouteMode } from "./lbsMapPick.js";
+import { API_BASE } from "./api/base.js";
 import {
   showDefaultCastleLocation,
   startAutoLocationWatch,
@@ -587,38 +588,259 @@ async function main() {
   const lbsBar = mountLbsStatusBar({
     onRetry: () => startLbsWatch(),
     onManualPick: () => enterManualPickMode(renderer, camera),
-    // 仅 mock 模式（默认 / ?mockLbs=loop）下显示「换个位置」按钮
-    showShuffle: !_useRealLbs,
-    onShuffle: () => {
-      // 重新随机一个园内 mock 点；不重置 didInitialFocus，相机不再 fly-to。
-      // mock loop 模式下不重置 setInterval 节奏，下一次自动刷新仍按原始时刻触发。
-      const { lat, lng } = mockRandomInParkLocation();
-      void emitMockLocation(lat, lng);
-    },
+    // 仅 mock 模式（默认 / ?mockLbs=loop）下显示开发工具按钮
+    showDevTools: !_useRealLbs,
     onCopyCameraCoords: () => {
-      const p = camera.position;
-      const t = rig.controls.target;
-      const fmt = (n) => (Number.isFinite(n) ? n.toFixed(1) : "NaN");
-      const text =
-        `Camera Position: x=${fmt(p.x)}, y=${fmt(p.y)}, z=${fmt(p.z)}\n` +
-        `Camera Target: x=${fmt(t.x)}, y=${fmt(t.y)}, z=${fmt(t.z)}`;
-      console.log(text);
-      const onCopied = () => showToast("相机坐标已复制", "info");
-      const onFailed = () => showToast("复制失败，请查看控制台", "error");
+      console.log("[cam-coord] callback invoked");
       try {
-        if (navigator.clipboard?.writeText) {
-          navigator.clipboard.writeText(text).then(onCopied).catch(onFailed);
-        } else {
-          onFailed();
+        if (!camera || !rig || !rig.controls) {
+          console.warn("[cam-coord] not ready:", { camera: !!camera, rig: !!rig, controls: !!rig?.controls });
+          showToast("相机未就绪，请稍后再试", "error");
+          return;
         }
-      } catch {
-        onFailed();
+        const p = camera.position;
+        const t = rig.controls.target;
+        const fmt = (n) => (Number.isFinite(n) ? n.toFixed(1) : "NaN");
+        const text =
+          `Camera Position: x=${fmt(p.x)}, y=${fmt(p.y)}, z=${fmt(p.z)}\n` +
+          `Camera Target: x=${fmt(t.x)}, y=${fmt(t.y)}, z=${fmt(t.z)}`;
+        console.log("[cam-coord]", text);
+
+        // 先同步尝试 execCommand（用户激活一定有效）
+        let syncCopied = false;
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0";
+          document.body.appendChild(ta);
+          ta.select();
+          syncCopied = document.execCommand("copy");
+          document.body.removeChild(ta);
+        } catch (_e) {
+          syncCopied = false;
+        }
+
+        if (syncCopied) {
+          showToast("相机坐标已复制", "info");
+          return;
+        }
+
+        // 同步失败，尝试 async clipboard API
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+          navigator.clipboard.writeText(text).then(
+            () => showToast("相机坐标已复制", "info"),
+            (reason) => {
+              console.warn("[cam-coord] clipboard write failed:", reason);
+              // 终极兜底：window.prompt 让用户手动复制
+              window.prompt("自动复制失败，请手动复制以下坐标：", text.replace("\n", " | "));
+              showToast("请从弹窗中手动复制坐标", "info");
+            }
+          );
+        } else {
+          // clipboard API 不可用且 execCommand 也失败
+          window.prompt("自动复制失败，请手动复制以下坐标：", text.replace("\n", " | "));
+          showToast("请从弹窗中手动复制坐标", "info");
+        }
+      } catch (err) {
+        console.error("[cam-coord] error:", err);
+        showToast("获取相机坐标失败: " + (err.message || err), "error");
       }
+    },
+    onDrawRoute: () => {
+      // 如果已处于画路线模式，点击按钮 = 确认提交
+      if (_drawRouteSession) {
+        commitDrawRoute();
+        return;
+      }
+      // 进入画路线前，先退出擦除模式（互斥）
+      if (_eraseRouteSession) {
+        teardownEraseRoute();
+      }
+      startDrawRoute();
+    },
+    onEraseRoute: () => {
+      // 如果已处于擦除模式，点击按钮 = 退出
+      if (_eraseRouteSession) {
+        teardownEraseRoute();
+        return;
+      }
+      // 进入擦除前，先退出画路线模式（互斥）
+      if (_drawRouteSession) {
+        teardownDrawRoute();
+      }
+      startEraseRoute();
     },
   });
 
+  // ---- 手动画路线会话 ----
+  /** @type {{ cancel: () => void, getPoints: () => Array<{x:number,y?:number,z:number}>, undo: () => void, clear: () => void } | null} */
+  let _drawRouteSession = null;
+  let _drawRouteKeyHandler = null;
+
+  function startDrawRoute() {
+    if (_drawRouteSession) return;
+    _drawRouteSession = enterDrawRouteMode(renderer, camera, scene);
+    showToast("画路线模式：左键添加点 / 右键撤销 / Enter 确认 / Esc 取消", "info");
+
+    _drawRouteKeyHandler = (ev) => {
+      if (!_drawRouteSession) return;
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        commitDrawRoute();
+      } else if (ev.key === "Escape") {
+        ev.preventDefault();
+        cancelDrawRoute();
+      } else if (ev.key === "z" && (ev.metaKey || ev.ctrlKey)) {
+        ev.preventDefault();
+        _drawRouteSession.undo();
+      }
+    };
+    window.addEventListener("keydown", _drawRouteKeyHandler, true);
+  }
+
+  function teardownDrawRoute() {
+    if (_drawRouteKeyHandler) {
+      window.removeEventListener("keydown", _drawRouteKeyHandler, true);
+      _drawRouteKeyHandler = null;
+    }
+    if (_drawRouteSession) {
+      _drawRouteSession.cancel();
+      _drawRouteSession = null;
+    }
+  }
+
+  function cancelDrawRoute() {
+    teardownDrawRoute();
+    showToast("已取消画路线", "info");
+  }
+
+  async function commitDrawRoute() {
+    if (!_drawRouteSession) return;
+    const points = _drawRouteSession.getPoints();
+    if (!Array.isArray(points) || points.length < 2) {
+      showToast("路线至少需要 2 个点", "warning");
+      return;
+    }
+    const id = `manual-${Date.now()}`;
+    const newRoad = { id, points };
+
+    // 本地即时渲染：追加到现有路网及 park_roads.json 文档中保持渲染
+    try {
+      const doc = await loadParkRoadsDoc();
+      const existingRoads = Array.isArray(doc?.roads) ? doc.roads.slice() : [];
+      existingRoads.push(newRoad);
+      lines.setParkRoads(existingRoads);
+    } catch (e) {
+      // 降级：仅添加新路线
+      lines.setParkRoads([newRoad]);
+    }
+
+    // 调用后端保存
+    let savedOk = false;
+    try {
+      const resp = await fetch(`${API_BASE}/api/park-roads/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newRoad),
+      });
+      if (resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        savedOk = data?.ok !== false;
+      }
+    } catch (e) {
+      savedOk = false;
+    }
+
+    // 控制台输出 JSON，供手动复制兑底
+    try {
+      console.log("=== 新路线数据 ===");
+      console.log(JSON.stringify(newRoad, null, 2));
+    } catch {}
+
+    teardownDrawRoute();
+
+    if (savedOk) {
+      showToast(`路线已保存 (${points.length} 点)，id=${id}`, "success");
+    } else {
+      showToast(`路线已渲染，但后端保存失败，请复制控制台 JSON 手动写入`, "warning");
+    }
+  }
+
+  // ---- 擦除路线会话 ----
+  /** @type {{ cancel: () => void } | null} */
+  let _eraseRouteSession = null;
+  let _eraseRouteHitHandler = null;
+  let _eraseRouteKeyHandler = null;
+
+  function startEraseRoute() {
+    if (_eraseRouteSession) return;
+    _eraseRouteSession = enterEraseRouteMode(renderer, camera, scene);
+    showToast("擦除模式：点击地图上的路线即可删除 / Esc 或右键退出", "info");
+
+    _eraseRouteHitHandler = (ev) => {
+      const id = ev?.detail?.id;
+      if (!id) return;
+      void deleteParkRoad(id);
+    };
+    window.addEventListener("route-erase-hit", _eraseRouteHitHandler);
+
+    _eraseRouteKeyHandler = (ev) => {
+      if (!_eraseRouteSession) return;
+      if (ev.key === "Escape") {
+        ev.preventDefault();
+        teardownEraseRoute();
+      }
+    };
+    window.addEventListener("keydown", _eraseRouteKeyHandler, true);
+  }
+
+  function teardownEraseRoute() {
+    if (_eraseRouteHitHandler) {
+      window.removeEventListener("route-erase-hit", _eraseRouteHitHandler);
+      _eraseRouteHitHandler = null;
+    }
+    if (_eraseRouteKeyHandler) {
+      window.removeEventListener("keydown", _eraseRouteKeyHandler, true);
+      _eraseRouteKeyHandler = null;
+    }
+    if (_eraseRouteSession) {
+      _eraseRouteSession.cancel();
+      _eraseRouteSession = null;
+    }
+  }
+
+  async function deleteParkRoad(id) {
+    let okFlag = false;
+    try {
+      const resp = await fetch(`${API_BASE}/api/park-roads/delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        okFlag = data?.ok !== false;
+      }
+    } catch (e) {
+      okFlag = false;
+    }
+
+    // 重新加载并刷新渲染（与后端文件保持一致）
+    try {
+      const doc = await loadParkRoadsDoc();
+      lines.setParkRoads(Array.isArray(doc?.roads) ? doc.roads : []);
+    } catch {}
+
+    if (okFlag) {
+      showToast(`已删除路线 ${id}`, "success");
+    } else {
+      showToast(`删除路线失败：${id}`, "error");
+    }
+  }
+
   /** mock 路径：在园内随机取点并派发 */
   async function startLbsMock(loop = false) {
+    console.log('[LBS] startLbsMock called, loop:', loop);
     // 切换时清理另一路径
     stopAutoLocationWatch();
 
@@ -630,6 +852,7 @@ async function main() {
     } else {
       stopMockLocationLoop();
       // 固定 mock 初始位置（场景坐标），跳过经纬度转换
+      console.log('[LBS] dispatching mock position: scene_x=-2, scene_z=-21.7');
       dispatchUserLocation({ scene_x: -2, scene_z: -21.7, source: "mock" });
       lbsBar.setState("on", "已模拟定位（固定位置）");
     }
@@ -655,24 +878,22 @@ async function main() {
         }
       },
       onError: (code, msg) => {
-        let tip = "";
-        if (code === 1) {
-          tip = "定位权限被拒绝，可在浏览器地址栏左侧重新授予；或点击下方手动选点";
-        } else if (code === 2) {
-          tip = "无法获取位置信号，可手动在地图上选点";
-        } else if (code === 3) {
-          tip = "定位超时，请重试或手动在地图上选点";
-        } else {
-          tip = msg || "定位失败";
-        }
-        lbsBar.setState("failed", tip);
-        showToast(tip, "error");
+        console.warn('[LBS] real GPS failed, code:', code, msg, '→ auto fallback to mock');
+        // GPS 失败后自动回退到 mock 模式，确保用户始终能看到 LBS 蓝点
+        stopAutoLocationWatch();
+        // 重置 didInitialFocus 以便 mock 路径能触发相机飞到用户位置
+        didInitialFocus = false;
+        void startLbsMock(false);
       },
     });
   }
 
   function startLbsWatch() {
-    if (_useRealLbs) {
+    // 非安全上下文（HTTP）强制走 mock，避免 geolocation 因非 HTTPS 而失败
+    const forceMock = !location.protocol.startsWith('https');
+    const effectiveReal = _useRealLbs && !forceMock;
+    console.log('[LBS] startLbsWatch called, mode:', effectiveReal ? 'real' : (_mockLbsMode || 'mock-single'), forceMock ? '(forced mock due to non-HTTPS)' : '');
+    if (effectiveReal) {
       startLbsReal();
     } else if (_mockLbsMode === "loop") {
       void startLbsMock(true);
@@ -691,10 +912,25 @@ async function main() {
   });
 
   // 场景加载完成后自动启动 GPS（intro 动画结束后触发以避免权限弹窗被静默拒绝）
+  let _lbsStarted = false;
   void introDone.then(() => setTimeout(() => {
+    console.log('[LBS] introDone resolved, starting LBS watch');
     didInitialFocus = true; // 不自动飞到 LBS，保持地图模式初始视角
-    startLbsWatch();
-  }, 200));
+    if (!_lbsStarted) { _lbsStarted = true; startLbsWatch(); }
+  }, 200)).catch((err) => {
+    console.error('[LBS] introDone error, forcing startLbsWatch:', err);
+    didInitialFocus = true;
+    if (!_lbsStarted) { _lbsStarted = true; startLbsWatch(); }
+  });
+  // 兜底定时器：如果 6 秒后 LBS 仍未启动（intro 动画卡住或 Promise 未 resolve），强制启动
+  setTimeout(() => {
+    if (!_lbsStarted) {
+      console.warn('[LBS] fallback timer: forcing startLbsWatch after 6s');
+      _lbsStarted = true;
+      didInitialFocus = true;
+      startLbsWatch();
+    }
+  }, 6000);
 
   // LBS 默认位置与行中推荐：在用户完成「智能规划」后由 planner / inParkGuide 触发
 
@@ -784,14 +1020,24 @@ async function main() {
     }
   });
 
+  const userLbs = new UserLocationMarker(scene);
+  /** 最新一次用户位置（供 quick-navigate 等事件使用） */
+  let lastUserLocation = null;
+
   // 快速导航：从当前 LBS 定位直接导航到选中景点
   window.addEventListener("quick-navigate", async (e) => {
     const id = e.detail?.id;
     if (!id) return;
-    const loc = lastUserLocation;
+    let loc = lastUserLocation;
+    // 如果 lastUserLocation 为空，使用默认 mock 位置并触发一次定位
     if (!loc || loc.scene_x == null || loc.scene_z == null) {
-      showToast("无法获取当前位置，请开启定位", "error");
-      return;
+      console.warn('[quick-navigate] lastUserLocation is null, using fallback mock position');
+      const fallback = { scene_x: -2, scene_z: -21.7, source: 'fallback' };
+      dispatchUserLocation(fallback);
+      loc = fallback;
+      lastUserLocation = fallback;
+      // 异步重新启动 LBS
+      startLbsWatch();
     }
     try {
       const result = await fetchWalkToNext(loc.scene_x, loc.scene_z, id);
@@ -855,25 +1101,24 @@ async function main() {
 
   hideLoading();
 
-  mountPlannerApp();
-
-  const userLbs = new UserLocationMarker(scene);
-
-  /** 最新一次用户位置（供 quick-navigate 等事件使用） */
-  let lastUserLocation = null;
+  try {
+    mountPlannerApp();
+  } catch (err) {
+    console.error('[main] mountPlannerApp() failed, LBS/navigation unaffected:', err);
+  }
 
   window.addEventListener("user-location-updated", (e) => {
     const d = e.detail || {};
     if (d.scene_x == null || d.scene_z == null) return;
+    console.log('[LBS] user-location-updated:', { scene_x: d.scene_x, scene_z: d.scene_z, source: d.source });
     lastUserLocation = d;
     userLbs.setPosition(d.scene_x, d.scene_z);
   });
 
   window.addEventListener("focus-user-location", async () => {
     if (rig._introPromise) await rig._introPromise;
-    const g = scene.getObjectByName("UserLBS");
-    if (!g?.visible) return;
-    rig.focusTopDownAtWorldPoint(g.position.clone().setY(0), { height: 60 });
+    if (!userLbs.group.visible) return;
+    rig.focusTopDownAtWorldPoint(userLbs.group.position.clone().setY(0), { height: 60 });
   });
 
   window.addEventListener("user-location-clear", () => {
@@ -904,6 +1149,7 @@ async function main() {
     const nx = d.next;
     let polyline = null;
     let segments = [];
+    let walkProvider = null;
 
     if (loc?.scene_x != null && loc?.scene_z != null) {
       try {
@@ -912,7 +1158,7 @@ async function main() {
           polyline = walk.points;
           segments = walk.segments || [];
           // provider 透传给 route-preview 供颜色区分
-          const walkProvider = walk.provider || null;
+          walkProvider = walk.provider || null;
         }
       } catch (err) {
         console.warn("[inpark] LBS→下一站 步行规划失败，使用直线:", err);
@@ -941,6 +1187,7 @@ async function main() {
           ordered: [{ id: nx.id, name: nx.name, position: nx.position }],
           attractionIds: [nx.id],
           segments,
+          provider: walkProvider || undefined,
           focusCamera: false,
           hidePoiLabels: false,
           inParkLeg: true,
@@ -975,6 +1222,15 @@ async function main() {
     userLbs.tick();
     carouselSpin.update(1 / 60);
     composer.render();
+
+    // ── LBS 定位 marker：独立 overlayScene 渲染，绕过 SSAO 后处理 ──
+    if (userLbs.group.visible) {
+      renderer.autoClear = false;
+      renderer.clearDepth();
+      renderer.render(userLbs.overlayScene, camera);
+      renderer.autoClear = true;
+    }
+
     waitLabels?.render(camera);
     // updateCameraDebug(camera, rig);
     requestAnimationFrame(tick);

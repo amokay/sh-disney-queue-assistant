@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <title>上迪游玩助手</title>
+    <link rel="stylesheet" href="./src/styles-planner.css" />
+    <!-- Babylon.js 核心 + Loaders（GLB 支持） -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <!-- 可选：GUI（如需 AdvancedDynamicTexture 做 3D UI） -->
+    <!-- <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script> -->
+    <!-- 可选：Inspector（仅开发阶段，生产环境移除） -->
+    <!-- <script src="https://cdn.babylonjs.com/inspector/babylon.inspector.bundle.js"></script> -->
+  </head>
+  <body>
+    <div id="ui-root"></div>
+    <canvas id="c" tabindex="0"></canvas>
+    <script type="module" src="./src/main_new.js"></script>
+  </body>
+</html>

@@ -2,6 +2,7 @@ import "./loadEnv.js";
 import express from "express";
 import cors from "cors";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import cron from "node-cron";
 import { config } from "./config/index.js";
@@ -88,7 +89,135 @@ app.get("/api/glb-list", (req, res) => {
   }
 });
 
-app.use(express.static(frontendDir));
+/**
+ * 调参面板「保存配置」：直接写入 model_transforms.json。
+ * 请求体: { rules: [...] }
+ */
+app.post("/api/save-transforms", (req, res) => {
+  try {
+    const body = req.body;
+    if (!body || !Array.isArray(body.rules)) {
+      return res.status(400).json({ ok: false, error: "需要 { rules: [...] }" });
+    }
+    const filePath = path.join(__dirname, "..", "frontend", "assets", "3d", "config", "model_transforms.json");
+
+    // 读取现有文件保留 _说明 和 _字段解释
+    let doc = {};
+    if (fs.existsSync(filePath)) {
+      try { doc = JSON.parse(fs.readFileSync(filePath, "utf-8")); } catch {}
+    }
+
+    // 合并：按 match 字段更新已有的，新增不存在的
+    const existing = Array.isArray(doc.rules) ? doc.rules : [];
+    for (const incoming of body.rules) {
+      const matchKey = String(incoming.match || "").toLowerCase();
+      if (!matchKey) continue;
+      const idx = existing.findIndex(r => String(r.match || "").toLowerCase() === matchKey);
+      if (idx >= 0) {
+        // 保留 _名称 字段
+        const name = existing[idx]._名称 || existing[idx]["_名称"];
+        existing[idx] = { ...incoming };
+        if (name) existing[idx]["_名称"] = name;
+      } else {
+        existing.push(incoming);
+      }
+    }
+    doc.rules = existing;
+
+    fs.writeFileSync(filePath, JSON.stringify(doc, null, 2), "utf-8");
+    res.json({ ok: true, count: existing.length });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+/**
+ * 手动画路线保存端点：追加一条路线到 park_roads.json。
+ * 请求体: { id?: string, points: [{x, y?, z}, ...] }
+ */
+app.post("/api/park-roads/add", (req, res) => {
+  try {
+    const body = req.body || {};
+    const points = Array.isArray(body.points) ? body.points : null;
+    if (!points || points.length < 2) {
+      return res.status(400).json({ ok: false, error: "points 至少需要 2 个坐标" });
+    }
+    const id = typeof body.id === "string" && body.id ? body.id : `manual-${Date.now()}`;
+
+    const filePath = path.join(__dirname, "..", "frontend", "assets", "data", "park_roads.json");
+    let doc = { roads: [] };
+    if (fs.existsSync(filePath)) {
+      try {
+        doc = JSON.parse(fs.readFileSync(filePath, "utf-8")) || { roads: [] };
+      } catch (e) {
+        return res.status(500).json({ ok: false, error: `读取 park_roads.json 失败: ${e?.message || e}` });
+      }
+    }
+    if (!Array.isArray(doc.roads)) doc.roads = [];
+
+    const sanitizedPoints = points
+      .map((p) => ({
+        x: Number(p?.x),
+        y: Number.isFinite(Number(p?.y)) ? Number(p.y) : (Number(doc.yHeight) || 0.3),
+        z: Number(p?.z),
+      }))
+      .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.z));
+    if (sanitizedPoints.length < 2) {
+      return res.status(400).json({ ok: false, error: "有效点不足 2 个" });
+    }
+
+    doc.roads.push({ id, points: sanitizedPoints });
+    doc.lastManualAppendAt = new Date().toISOString();
+    fs.writeFileSync(filePath, JSON.stringify(doc, null, 2));
+    return res.json({ ok: true, id, total: doc.roads.length });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+app.post("/api/park-roads/delete", (req, res) => {
+  try {
+    const { id } = req.body || {};
+    if (!id) return res.status(400).json({ ok: false, error: "缺少 id" });
+
+    const filePath = path.join(__dirname, "..", "frontend", "assets", "data", "park_roads.json");
+    let doc = { roads: [] };
+    if (fs.existsSync(filePath)) {
+      doc = JSON.parse(fs.readFileSync(filePath, "utf-8")) || { roads: [] };
+    }
+    if (!Array.isArray(doc.roads)) doc.roads = [];
+
+    const before = doc.roads.length;
+    doc.roads = doc.roads.filter((r) => r.id !== id);
+    const after = doc.roads.length;
+
+    fs.writeFileSync(filePath, JSON.stringify(doc, null, 2), "utf-8");
+    res.json({ ok: true, removed: before - after });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+// Babylon.js CDN 需要 unsafe-eval；对 index_babylon.html 放开 CSP
+app.use((req, res, next) => {
+  if (req.path === "/index_babylon.html" || req.path.startsWith("/src/scene3d/")) {
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self' https://cdn.babylonjs.com; " +
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.babylonjs.com; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data: blob:; " +
+      "connect-src 'self' https://cdn.babylonjs.com http://localhost:* ws://localhost:*; " +
+      "worker-src 'self' blob:;"
+    );
+  }
+  next();
+});
+// 默认首页指向 Babylon.js 入口（main_new.js 依赖 Babylon 引擎）
+app.get("/", (req, res) => {
+  res.redirect("/index_babylon.html");
+});
+app.use(express.static(frontendDir, { index: false }));
 // 将 node_modules/three 本地化挂载，避免依赖 CDN（支持离线访问）
 app.use('/vendor/three', express.static(path.join(__dirname, 'node_modules/three')));
 

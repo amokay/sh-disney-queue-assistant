@@ -7,7 +7,7 @@ export function showToast(message, type = "info") {
   wrap.style.cssText = [
     "position:fixed",
     "right:12px",
-    "z-index:20000",
+    "z-index:30000",
     "max-width:min(360px,92vw)",
     "padding:10px 12px",
     "border-radius:12px",

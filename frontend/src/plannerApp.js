@@ -9,47 +9,90 @@ import { fetchAmapWalkingRoute } from "./api/amap.js";
 import { waitColorClass } from "./config.js";
 import { loadPrefsDraft } from "./ui/sessionStore.js";
 import { defaultInparkWindow } from "./ui/parkTimes.js";
-import { setRecommendedIds } from "./waitLabels.js";
+import { setRecommendedIds } from "./recommendedStore.js";
 
 export function mountPlannerApp() {
+  // --- Titlebar（页面顶部状态栏 + 二级导航） ---
+  const titlebar = document.createElement("div");
+  titlebar.className = "planner-titlebar";
+  titlebar.innerHTML = `
+    <div class="planner-titlebar__statusbar">
+      <span class="planner-titlebar__time" id="planner-titlebar-time">9:41</span>
+      <div class="planner-titlebar__indicators">
+        <svg class="planner-titlebar__icon planner-titlebar__icon--signal" width="17" height="11" viewBox="0 0 17 11" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect x="0" y="7" width="3" height="4" rx="0.8" fill="#000000"/>
+          <rect x="4.5" y="5" width="3" height="6" rx="0.8" fill="#000000"/>
+          <rect x="9" y="2.5" width="3" height="8.5" rx="0.8" fill="#000000"/>
+          <rect x="13.5" y="0" width="3" height="11" rx="0.8" fill="#000000"/>
+        </svg>
+        <svg class="planner-titlebar__icon planner-titlebar__icon--wifi" width="15" height="11" viewBox="0 0 15 11" fill="#000000" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M7.5 0C4.66 0 2.05 1 0 2.66l1.4 1.4C3.07 2.7 5.23 2 7.5 2s4.43 0.7 6.1 2.06L15 2.66C12.95 1 10.34 0 7.5 0z"/>
+          <path d="M7.5 4C5.62 4 3.85 4.66 2.45 5.85l1.4 1.4C4.85 6.46 6.13 6 7.5 6s2.65 0.46 3.65 1.25l1.4-1.4C11.15 4.66 9.38 4 7.5 4z"/>
+          <circle cx="7.5" cy="9.4" r="1.5"/>
+        </svg>
+        <svg class="planner-titlebar__icon planner-titlebar__icon--battery" width="27" height="12" viewBox="0 0 27 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect x="0.5" y="0.5" width="22" height="11" rx="2.6" stroke="#000000" stroke-opacity="0.55"/>
+          <rect x="2" y="2" width="19" height="8" rx="1.4" fill="#000000"/>
+          <rect x="23.5" y="4" width="1.5" height="4" rx="0.6" fill="#000000" fill-opacity="0.55"/>
+        </svg>
+      </div>
+    </div>
+    <div class="planner-titlebar__navbar">
+      <button type="button" class="planner-titlebar__btn planner-titlebar__btn--back" aria-label="返回">
+        <svg width="18" height="16" viewBox="0 0 33 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13.5127 0.512573C14.1961 -0.170844 15.3039 -0.170844 15.9873 0.512573C16.6707 1.196 16.6707 2.30379 15.9873 2.98718L5.97461 12.9999H30.75C31.7165 12.9999 32.5 13.7834 32.5 14.7499C32.4999 15.7163 31.7165 16.4999 30.75 16.4999H5.97461L15.9873 26.5126C16.6706 27.196 16.6707 28.3038 15.9873 28.9872C15.3039 29.6705 14.1961 29.6705 13.5127 28.9872L0.512695 15.9872C0.431687 15.9062 0.358866 15.8171 0.294922 15.7216C0.279328 15.6983 0.265331 15.6741 0.250977 15.6503C0.235264 15.6242 0.219444 15.5981 0.205078 15.5712C0.190248 15.5433 0.177279 15.5147 0.164062 15.4862C0.154243 15.4651 0.143758 15.4443 0.134766 15.4227C0.121106 15.3899 0.109231 15.3565 0.0976562 15.3231C0.0902122 15.3017 0.0818187 15.2805 0.0751953 15.2587C0.0686627 15.2371 0.0642761 15.215 0.0585938 15.1932C0.0215325 15.0515 1.13671e-05 14.9032 0 14.7499C0 14.5962 0.0214093 14.4475 0.0585938 14.3055C0.0642833 14.2838 0.0686557 14.2617 0.0751953 14.2401C0.0825495 14.2159 0.092224 14.1926 0.100586 14.1688C0.111115 14.1389 0.120603 14.1084 0.132812 14.079C0.144962 14.0497 0.159186 14.0215 0.172852 13.993C0.183284 13.9713 0.192719 13.949 0.204102 13.9276C0.218539 13.9005 0.235179 13.8747 0.250977 13.8485C0.265336 13.8247 0.279324 13.8005 0.294922 13.7772C0.358753 13.6819 0.431879 13.5934 0.512695 13.5126L13.5127 0.512573Z" fill="white"/>
+        </svg>
+      </button>
+      <span class="planner-titlebar__title">上迪排队助手</span>
+      <div class="planner-titlebar__actions">
+        <button type="button" class="planner-titlebar__btn planner-titlebar__btn--more" aria-label="更多">
+          <svg width="16" height="4" viewBox="0 0 16 4" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="2" cy="2" r="1.5" fill="#FFFFFF"/>
+            <circle cx="8" cy="2" r="1.5" fill="#FFFFFF"/>
+            <circle cx="14" cy="2" r="1.5" fill="#FFFFFF"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(titlebar);
+
+  // 返回按钮事件
+  titlebar.querySelector(".planner-titlebar__btn--back")?.addEventListener("click", (e) => {
+    e.preventDefault();
+  });
+
+  // 状态栏时间：HH:MM，每分钟更新
+  const timeEl = titlebar.querySelector("#planner-titlebar-time");
+  const renderStatusBarTime = () => {
+    if (!timeEl) return;
+    const d = new Date();
+    const hh = d.getHours();
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    timeEl.textContent = `${hh}:${mm}`;
+  };
+  renderStatusBarTime();
+  // 对齐到下一分钟边界，再以 60s 间隔刷新
+  const msToNextMinute = 60_000 - (Date.now() % 60_000);
+  setTimeout(() => {
+    renderStatusBarTime();
+    setInterval(renderStatusBarTime, 60_000);
+  }, msToNextMinute);
+
   const dock = document.createElement("div");
   dock.id = "planner-dock";
-  dock.className = "planner-dock is-open";
+  dock.className = "planner-dock is-collapsed";
 
   dock.innerHTML = `
     <div class="planner-dock__panel">
       <button type="button" class="planner-dock__handle" id="planner-dock-handle" aria-label="展开或收起面板">
         <span class="planner-dock__handle-bar"></span>
       </button>
-      <h2 class="planner-dock__section-title">当前推荐以下项目</h2>
-      <div class="recommend__reason" id="recommend-reason">智能路线规划，一样的时间让你玩更多</div>
+      <h2 class="planner-dock__title-gradient">现在玩以下项目，让你省时玩得更多<span class="planner-dock__refresh-time" id="planner-refresh-time"></span></h2>
       <div class="planner-dock__scroll" id="planner-dock-scroll"></div>
+      <div class="planner-dock__dots" id="planner-dock-dots" aria-hidden="true"></div>
       <h2 class="planner-dock__section-title other-attractions__title" id="other-attractions-title" style="display:none">其他项目</h2>
       <div class="other-attractions__scroll" id="other-attractions-scroll"></div>
-      <h2 class="planner-dock__section-title">必玩挑战<span class="mustplay__dots" id="mustplay-dots"><span class="mustplay__dot"></span><span class="mustplay__dot"></span><span class="mustplay__dot"></span><span class="mustplay__dot"></span><span class="mustplay__dot"></span><span class="mustplay__dot"></span></span><span class="mustplay__count" id="mustplay-count">0/6</span></h2>
-      <div class="planner-dock__mustplay" id="planner-dock-mustplay">
-        <div class="mustplay__grid">
-          <div class="mustplay__item" data-mustplay-name="创极速光轮"><span class="mustplay__name">创极速光轮</span><span class="mustplay__check">✓</span></div>
-          <div class="mustplay__item" data-mustplay-name="加勒比海盗——沉落宝藏之战"><span class="mustplay__name">加勒比海盗——沉落宝藏之战</span><span class="mustplay__check">✓</span></div>
-          <div class="mustplay__item" data-mustplay-name="七个小矮人矿山车"><span class="mustplay__name">七个小矮人矿山车</span><span class="mustplay__check">✓</span></div>
-          <div class="mustplay__item" data-mustplay-name="热力追踪"><span class="mustplay__name">热力追踪</span><span class="mustplay__check">✓</span></div>
-          <div class="mustplay__item" data-mustplay-name="翱翔·飞越地平线"><span class="mustplay__name">翱翔·飞越地平线</span><span class="mustplay__check">✓</span></div>
-          <div class="mustplay__item" data-mustplay-name="雷鸣山漂流"><span class="mustplay__name">雷鸣山漂流</span><span class="mustplay__check">✓</span></div>
-        </div>
-      </div>
-      <div class="stats__header">
-        <div class="stats__header-left">
-          <h2 class="planner-dock__section-title">今日战绩</h2>
-          <div class="stats__countdown" id="stats-countdown">距离闭园还有 --:--</div>
-        </div>
-        <div class="stats__medal" id="stats-medal"></div>
-      </div>
-      <div class="planner-dock__stats" id="planner-dock-stats">
-        <div class="stats__played" id="stats-played">
-          <div class="stats__played-summary">今日玩了<span class="stats__played-count" id="stats-played-count">0</span>个项目，共计<span class="stats__played-total" id="stats-played-total">0</span>次，超越了<span class="stats__played-pct" id="stats-played-pct">0</span>%的游客<span class="stats__played-title" id="stats-played-title"></span></div>
-          <div class="stats__played-list" id="stats-played-list"></div>
-        </div>
-      </div>
     </div>
   `;
 
@@ -70,6 +113,8 @@ export function mountPlannerApp() {
   let lastRankX = null;
   let lastRankZ = null;
   let refreshTimer = null;
+  let refreshDisplayTimer = null; // 每10秒更新相对时间显示
+  let lastRefreshTime = Date.now(); // 上次刷新的时间戳
   const playedCounts = new Map(); // id -> 已玩次数
   // 必玩挑战（官方完整名称）
   const mustPlayList = [
@@ -77,29 +122,70 @@ export function mountPlannerApp() {
     "加勒比海盗——沉落宝藏之战",
     "七个小矮人矿山车",
     "热力追踪",
-    "翱翔·飞越地平线",
+    "翡翔·飞越地平线",
     "雷鸣山漂流",
   ];
-  const mustPlayDone = new Set(); // 已完成的必玩挑战名称
+  // 热门项目（非必玩但仍然值得推荐的热门项目）
+  const popularList = [
+    "小飞侠天空奇遇",
+    "晶彩奇航",
+    "巴斯光年星际营救",
+    "古迹探索营",
+    "小熊维尼历险记",
+    "喜美水上派对",
+    "喷气背包飞行器",
+    "太空幸会史迪奇",
+  ];
+  // 判断当前景点是否属于必玩项目（与必玩列表做包含式模糊匹配）
+  function isMustPlayAttraction(a) {
+    if (!a) return false;
+    const candidates = [a.name, a.name_cn].filter(Boolean);
+    return mustPlayList.some((m) =>
+      candidates.some((c) => c.includes(m) || m.includes(c))
+    );
+  }
   let activeCardId = null; // 当前选中卡片的 id，renderCards 后恢复 is-active
   let navActiveForCard = true; // 当前选中卡片的导航是否激活（true=导航中，false=暂停）
+  let _pendingNavCardId = null; // 展开态下点击"开始导航"后记录的目标卡片 id，收起后自动选中并滚动
   // 手动加入推荐的项目 id 集合（不持久化，刷新页面重置）
   // 仅这部分卡片显示紫色背景与右上角删除按钮，系统自动推荐的初始 3 张维持默认样式。
   const manualRecommendIds = new Set();
   let lastOpportunityIds = new Set(); // 上一次的机会推荐ID
   let appReady = false; // 启动保护期：true 后才允许弹 opportunity toast
 
-  // --- 折叠控制（四档：collapsed / mid / open / full）---
+  // --- 折叠控制（两档：collapsed / full）---
   function setDockState(state) {
-    // state: 'collapsed' | 'mid' | 'open' | 'full'
+    // state: 'collapsed' | 'full'
+    const wasFullBefore = dock.classList.contains("is-full");
     dock.classList.toggle("is-collapsed", state === "collapsed");
-    dock.classList.toggle("is-mid", state === "mid");
-    dock.classList.toggle("is-open", state === "open");
     dock.classList.toggle("is-full", state === "full");
+
+    // 从展开态收起时，若有待激活的导航卡片，等 CSS 过渡结束后选中并滚动到可见
+    if (wasFullBefore && state === "collapsed" && _pendingNavCardId) {
+      const navId = _pendingNavCardId;
+      _pendingNavCardId = null;
+      // CSS transition 为 0.28s，等待过渡完成后再执行滚动
+      setTimeout(() => {
+        const targetCard = dock.querySelector(`.detail__card[data-id="${navId}"]`);
+        if (targetCard) {
+          // 确保 is-active 状态存在
+          if (!targetCard.classList.contains("is-active")) {
+            dock.querySelectorAll(".detail__card.is-active").forEach(c => {
+              c.classList.remove("is-active");
+              const btn = c.querySelector("[data-action=navigate]");
+              if (btn) { btn.classList.remove("is-navigating"); btn.textContent = "开始导航"; }
+            });
+            targetCard.classList.add("is-active");
+            activeCardId = navId;
+          }
+          targetCard.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        }
+      }, 320);
+    }
   }
 
   function setCollapsed(collapsed) {
-    setDockState(collapsed ? "collapsed" : "open");
+    setDockState(collapsed ? "collapsed" : "full");
   }
 
   // --- 把手交互：点击切换 + 上拉/下拉手势切换三档 ---
@@ -128,13 +214,11 @@ export function mountPlannerApp() {
         suppressClick = true; // 拖动达到阈值后抑制随后的 click
         const cls = dock.classList;
         if (dy < 0) {
-          // 上拉：collapsed → open → full
-          if (cls.contains("is-collapsed")) setDockState("open");
-          else if (cls.contains("is-open")) setDockState("full");
+          // 上拉：collapsed → full
+          if (cls.contains("is-collapsed")) setDockState("full");
         } else {
-          // 下拉：full → open → collapsed
-          if (cls.contains("is-full")) setDockState("open");
-          else if (cls.contains("is-open")) setDockState("collapsed");
+          // 下拉：full → collapsed
+          if (cls.contains("is-full")) setDockState("collapsed");
         }
       }
       try { handleEl.releasePointerCapture(e.pointerId); } catch (_) {}
@@ -151,7 +235,7 @@ export function mountPlannerApp() {
         e.stopImmediatePropagation();
         return;
       }
-      // 点击：在 collapsed 与 open 之间切换（full 状态点击直接收起）
+      // 点击：在 collapsed 与 full 之间切换
       setCollapsed(!dock.classList.contains("is-collapsed"));
     });
   }
@@ -172,6 +256,43 @@ export function mountPlannerApp() {
     return `今日已闭园 ${prefix} 08:00`;
   }
 
+  // 构造排队时间文案：固定格式「身高要求xcm｜排队时长x分钟」
+  // 闭园/暂停时替换排队部分为对应文案
+  function buildWaitText(a, wait) {
+    const isClosed = wait?.status === "closed";
+    let queuePart;
+    if (isParkClosed()) {
+      queuePart = "今日已闭园";
+    } else if (isClosed) {
+      queuePart = "暂停排队";
+    } else {
+      const wm = wait?.waitMinutes;
+      queuePart = wm == null ? "排队时长—" : `排队时长${wm}分钟`;
+    }
+    const minHeight = Number(a?.min_height_cm) || 0;
+    if (minHeight > 0) {
+      return `身高要求${minHeight}cm｜${queuePart}`;
+    }
+    return `无身高要求｜${queuePart}`;
+  }
+
+  // 构造排队时间 HTML：身高要求保持默认色，排队时长部分带颜色 class
+  function buildWaitHtml(a, wait, colorCls) {
+    const isClosed = wait?.status === "closed";
+    let queuePart;
+    if (isParkClosed()) {
+      queuePart = "今日已闭园";
+    } else if (isClosed) {
+      queuePart = "暂停排队";
+    } else {
+      const wm = wait?.waitMinutes;
+      queuePart = wm == null ? "排队时长—" : `排队时长${wm}分钟`;
+    }
+    const minHeight = Number(a?.min_height_cm) || 0;
+    const heightPart = minHeight > 0 ? `身高要求${minHeight}cm` : '无身高要求';
+    return `${heightPart}<svg class="wait-divider" width="1" height="14" viewBox="0 0 1 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="16" fill="#D9D9D9"/></svg><span class="wait-queue-color ${colorCls}${isClosed ? ' is-closed' : ''}">${queuePart}</span>`;
+  }
+
   // --- 渲染卡片 ---
   // 渲染 attractions（当前推荐的前 3 个项目）
   function renderCards() {
@@ -183,7 +304,8 @@ export function mountPlannerApp() {
     if (!container) return;
 
     if (attractions.length === 0) {
-      container.innerHTML = `<span style="color:rgba(255,255,255,0.45);font-size:12px;">加载中…</span>`;
+      container.innerHTML = `<span class="planner-dock__empty">加载中…</span>`;
+      renderDots(0);
       return;
     }
 
@@ -195,32 +317,37 @@ export function mountPlannerApp() {
         const waitCls = waitColorClass(wm);
         const isClosed = wait?.status === "closed";
         const parkClosed = isParkClosed();
-        const waitText = parkClosed ? getClosedText() : isClosed ? "暂停开放" : (wm == null ? "等待时长：—" : `等待时长：${wm} 分钟`);
+        const waitHtml = buildWaitHtml(a, wait, parkClosed ? 'wait-color--closed' : waitCls);
         const waitDisplayCls = parkClosed ? 'wait-color--closed' : waitCls;
         const distLabel = getDistLabel(a);
         const isPlayed = playedCounts.has(a.id);
         const playedNum = playedCounts.get(a.id) || 0;
-        const nextTagStyle = isPlayed ? ' style="display:none"' : '';
-        const playedTagStyle = isPlayed ? '' : ' style="display:none"';
-        const playedText = isPlayed ? `已玩${playedNum}次` : '';
-        // 暂停开放且未玩过：将「待玩」标签替换为「暂停开放」（红色样式）
-        const nextTagText = isClosed ? '暂停开放' : '待玩';
-        const nextTagCls = isClosed ? 'planner-dock__card-next is-closed' : 'planner-dock__card-next';
-        // 手动加入推荐的卡片：附加 is-manual-recommend 类（用于紫色背景）并渲染删除按钮；
-        // 系统自动推荐的卡片：默认背景，无删除按钮。
+        // 标签仅在必玩项目上展示：未玩=「必玩」(橙色)，已玩=「已玩N次」(紫色 is-played)
+        const isMust = isMustPlayAttraction(a);
+        let tagHtml = '';
+        if (isMust) {
+          if (isPlayed) {
+            tagHtml = `<span class="rec-card__tag is-played">已玩${playedNum}次</span>`;
+          } else {
+            tagHtml = `<span class="rec-card__tag">必玩</span>`;
+          }
+        }
+        // 手动加入推荐的卡片：附加 is-manual-recommend 类并渲染删除按钮
         const isManual = manualRecommendIds.has(String(a.id));
         const manualCls = isManual ? ' is-manual-recommend' : '';
-        const removeBtnHtml = isManual ? '<span class="detail__card-remove" data-action="remove-card">&times;</span>' : '';
+        const removeBtnHtml = isManual ? '<span class="detail__card-remove" data-action="remove-card"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 5.10771L11.7321 0.375663C12.2572 -0.131497 13.0918 -0.124244 13.608 0.391965C14.1242 0.908173 14.1315 1.74285 13.6243 2.26795L8.89229 7L13.6243 11.7321C14.1315 12.2572 14.1242 13.0918 13.608 13.608C13.0918 14.1242 12.2572 14.1315 11.7321 13.6243L7 8.89229L2.26795 13.6243C1.74285 14.1315 0.908173 14.1242 0.391965 13.608C-0.124244 13.0918 -0.131497 12.2572 0.375663 11.7321L5.10771 7L0.375663 2.26795C-0.131497 1.74285 -0.124244 0.908173 0.391965 0.391965C0.908173 -0.124244 1.74285 -0.131497 2.26795 0.375663L7 5.10771Z" fill="currentColor"/></svg></span>' : '';
         return `
-          <div class="detail__card${manualCls}" data-id="${a.id}">
+          <div class="detail__card rec-card${manualCls}" data-id="${a.id}">
             ${removeBtnHtml}
-            <div class="detail__title">${a.name || ''}<span class="${nextTagCls}"${nextTagStyle}>${nextTagText}</span><span class="detail__played-count"${playedTagStyle}>${playedText}</span></div>
-            <div class="detail__zone">${a.zone || ''}</div>
-            <div class="detail__wait ${waitDisplayCls}${isClosed ? ' is-closed' : ''}">${waitText}</div>
-            <div class="detail__dist planner-dock__card-dist">${distLabel}</div>
-            <div class="detail__actions">
-              <button type="button" class="btn btn--primary" data-action="navigate">开始导航</button>
-              <button type="button" class="btn btn--secondary" data-action="mark-done">已玩过</button>
+            <div class="rec-card__head">
+              <span class="rec-card__name">${a.name || ''}</span>
+              ${tagHtml}
+            </div>
+            <div class="rec-card__wait detail__wait">${waitHtml}</div>
+            <div class="rec-card__dist planner-dock__card-dist">${distLabel}</div>
+            <div class="rec-card__actions detail__actions">
+              <button type="button" class="rec-card__btn rec-card__btn--secondary btn btn--secondary" data-action="mark-done">已玩过</button>
+              <button type="button" class="rec-card__btn rec-card__btn--primary btn btn--primary" data-action="navigate">开始导航</button>
             </div>
           </div>`;
       })
@@ -235,7 +362,7 @@ export function mountPlannerApp() {
         if (btn) {
           if (navActiveForCard) {
             btn.classList.add("is-navigating");
-            btn.textContent = "导航中";
+            btn.textContent = "导航中...";
           } else {
             btn.classList.remove("is-navigating");
             btn.textContent = "开始导航";
@@ -244,11 +371,49 @@ export function mountPlannerApp() {
       }
     }
 
+    // 渲染轮播指示器并同步当前激活点
+    renderDots(displayList.length);
+    updateActiveDot();
+
+    // 卡片入场动效：逐个延迟添加 is-loading-in
+    const allCards = container.querySelectorAll(".detail__card");
+    allCards.forEach((card, i) => {
+      card.classList.add("is-loading-in");
+      card.style.animationDelay = `${i * 80}ms`;
+      card.addEventListener("animationend", () => {
+        card.classList.remove("is-loading-in");
+        card.classList.add("is-loaded");
+        card.style.animationDelay = "";
+      }, { once: true });
+    });
+
     // 先渲染直线距离，再异步覆盖为步行距离
     updateWalkDistances();
 
-    // 同步副标题文案
-    updateRecommendReason();
+  }
+
+  // --- 轮播指示器 ---
+  function renderDots(count) {
+    const dotsEl = dock.querySelector("#planner-dock-dots");
+    if (!dotsEl) return;
+    if (count <= 1) { dotsEl.innerHTML = ""; return; }
+    dotsEl.innerHTML = Array.from({ length: count }, (_, i) =>
+      `<span class="planner-dock__dot${i === 0 ? ' is-active' : ''}"></span>`
+    ).join("");
+  }
+
+  function updateActiveDot() {
+    const scrollEl = dock.querySelector("#planner-dock-scroll");
+    const dotsEl = dock.querySelector("#planner-dock-dots");
+    if (!scrollEl || !dotsEl) return;
+    const dots = dotsEl.querySelectorAll(".planner-dock__dot");
+    if (!dots.length) return;
+    const cards = scrollEl.querySelectorAll(".rec-card");
+    if (!cards.length) return;
+    // 卡片宽度 + gap，参考首张卡片实际宽度，gap=12
+    const step = cards[0].getBoundingClientRect().width + 12;
+    const idx = Math.max(0, Math.min(dots.length - 1, Math.round(scrollEl.scrollLeft / step)));
+    dots.forEach((d, i) => d.classList.toggle("is-active", i === idx));
   }
 
   // --- 渲染"其他项目"卡片 ---
@@ -277,25 +442,31 @@ export function mountPlannerApp() {
         const waitCls = waitColorClass(wm);
         const isClosed = wait?.status === "closed";
         const parkClosed = isParkClosed();
-        const waitText = parkClosed ? getClosedText() : isClosed ? "暂停开放" : (wm == null ? "等待时长：—" : `等待时长：${wm} 分钟`);
+        const waitHtml = buildWaitHtml(a, wait, parkClosed ? 'wait-color--closed' : waitCls);
         const waitDisplayCls = parkClosed ? 'wait-color--closed' : waitCls;
+        const distLabel = getDistLabel(a);
         const isPlayed = playedCounts.has(a.id);
         const playedNum = playedCounts.get(a.id) || 0;
-        const nextTagStyle = isPlayed ? ' style="display:none"' : '';
-        const playedTagStyle = isPlayed ? '' : ' style="display:none"';
-        const playedText = isPlayed ? `已玩${playedNum}次` : '';
-        // 暂停开放且未玩过：将「待玩」标签替换为「暂停开放」（红色样式）；
-        // 已玩优先级更高，仍展示「已玩N次」。
-        const nextTagText = isClosed ? '暂停开放' : '待玩';
-        const nextTagCls = isClosed ? 'planner-dock__card-next is-closed' : 'planner-dock__card-next';
+        const isMust = isMustPlayAttraction(a);
+        let tagHtml = '';
+        if (isMust) {
+          if (isPlayed) {
+            tagHtml = `<span class="rec-card__tag is-played">已玩${playedNum}次</span>`;
+          } else {
+            tagHtml = `<span class="rec-card__tag">必玩</span>`;
+          }
+        }
         return `
-          <div class="detail__card other-attractions__card" data-id="${a.id}">
-            <div class="detail__title">${a.name || ''}<span class="${nextTagCls}"${nextTagStyle}>${nextTagText}</span><span class="detail__played-count"${playedTagStyle}>${playedText}</span></div>
-            <div class="detail__zone">${a.zone || ''}</div>
-            <div class="detail__wait ${waitDisplayCls}${isClosed ? ' is-closed' : ''}">${waitText}</div>
-            <div class="detail__actions">
-              <button type="button" class="btn btn--primary" data-action="add-recommend">加入推荐</button>
-              <button type="button" class="btn btn--secondary" data-action="mark-done">已玩过</button>
+          <div class="detail__card rec-card other-attractions__card" data-id="${a.id}">
+            <div class="rec-card__head">
+              <span class="rec-card__name">${a.name || ''}</span>
+              ${tagHtml}
+            </div>
+            <div class="rec-card__wait detail__wait">${waitHtml}</div>
+            <div class="rec-card__dist planner-dock__card-dist">${distLabel}</div>
+            <div class="rec-card__actions detail__actions">
+              <button type="button" class="rec-card__btn rec-card__btn--secondary btn btn--secondary" data-action="mark-done">已玩过</button>
+              <button type="button" class="rec-card__btn rec-card__btn--primary btn btn--primary" data-action="add-recommend">开始导航</button>
             </div>
           </div>`;
       })
@@ -311,7 +482,7 @@ export function mountPlannerApp() {
         if (btn) {
           if (navActiveForCard) {
             btn.classList.add("is-navigating");
-            btn.textContent = "导航中";
+            btn.textContent = "导航中...";
           } else {
             btn.classList.remove("is-navigating");
             btn.textContent = "开始导航";
@@ -323,187 +494,14 @@ export function mountPlannerApp() {
     updateWalkDistances();
   }
 
-  // --- 必玩挑战模块：检查并高亮 ---
-  // 用景点 name / name_cn 与 mustPlayList 做包含式模糊匹配，
-  // 命中即加入 mustPlayDone 并更新 UI（item 高亮 + 进度文字）。
-  function checkMustPlayMatch(attractionId) {
-    const a = attractions.find((x) => String(x.id) === String(attractionId));
-    if (!a) return;
-    const candidates = [a.name, a.name_cn].filter(Boolean);
-    for (const must of mustPlayList) {
-      if (mustPlayDone.has(must)) continue;
-      const hit = candidates.some((c) => c.includes(must) || must.includes(c));
-      if (hit) {
-        mustPlayDone.add(must);
-        const item = dock.querySelector(
-          `.mustplay__item[data-mustplay-name="${must}"]`
-        );
-        if (item) item.classList.add("is-done");
-      }
-    }
-    const dots = dock.querySelectorAll("#mustplay-dots .mustplay__dot");
-    const doneCount = mustPlayDone.size;
-    dots.forEach((dot, idx) => {
-      dot.classList.toggle("is-done", idx < doneCount);
-    });
-    // 同步更新 x/6 计数文案；达成 6/6 时切换为「挑战成功」并应用紫色加粗高亮
-    const countEl = dock.querySelector("#mustplay-count");
-    if (countEl) {
-      if (doneCount >= 6) {
-        countEl.textContent = "挑战成功";
-        countEl.style.color = "rgba(139, 92, 246, 1)";
-        countEl.style.fontWeight = "700";
-      } else {
-        countEl.textContent = `${doneCount}/6`;
-        countEl.style.color = "rgba(255, 255, 255, 0.6)";
-        countEl.style.fontWeight = "";
-      }
-    }
-  }
-
-  // 数据加载后根据已有 playedCounts 同步必玩状态（覆盖刷新场景）
-  function syncMustPlayFromPlayed() {
-    for (const id of playedCounts.keys()) checkMustPlayMatch(id);
-  }
-
-  // --- 今日战绩：已玩统计 + 加权排名 ---
-  // 已玩项目数 = playedCounts.size（去重）
-  // 总次数 = playedCounts 所有 value 之和
-  // 加权得分：必玩挑战 ×3，普通项目 ×1
-  // 排名百分比：sigmoid 拟合（0.3 斜率，8 次中点），上限 99%
-  function updateStats() {
-    const playedSet = playedCounts.size;
-    let totalCount = 0;
-    let score = 0;
-    for (const [id, count] of playedCounts.entries()) {
-      totalCount += count;
-      const a = attractions.find((x) => String(x.id) === String(id));
-      const candidates = a ? [a.name, a.name_cn].filter(Boolean) : [];
-      const isMust = candidates.some((c) =>
-        mustPlayList.some((m) => c.includes(m) || m.includes(c))
-      );
-      score += count * (isMust ? 3 : 1);
-    }
-    const pct = Math.min(99, Math.floor(100 / (1 + Math.exp(-0.3 * (score - 8)))));
-
-    const elPlayed = dock.querySelector("#stats-played-count");
-    const elTotal = dock.querySelector("#stats-played-total");
-    const elList = dock.querySelector("#stats-played-list");
-    const elPct = dock.querySelector("#stats-played-pct");
-    const elTitle = dock.querySelector("#stats-played-title");
-    const elMedal = dock.querySelector("#stats-medal");
-    const elSummary = dock.querySelector(".stats__played-summary");
-
-    // 空状态：未玩过任何项目时，仅展示一句提示，隐藏列表/汇总等所有数据内容
-    const elPlayedWrap = dock.querySelector("#stats-played");
-    let elEmpty = dock.querySelector(".stats__empty");
-    if (!elEmpty && elPlayedWrap) {
-      elEmpty = document.createElement("div");
-      elEmpty.className = "stats__empty";
-      elEmpty.textContent = "今天还没玩任何项目呢";
-      elPlayedWrap.insertBefore(elEmpty, elPlayedWrap.firstChild);
-    }
-    const isEmpty = playedSet === 0;
-    if (elEmpty) elEmpty.style.display = isEmpty ? "" : "none";
-    if (elList) elList.style.display = isEmpty ? "none" : "";
-    // 未玩过任何项目时，隐藏"超越 XX% 的游客"整句
-    if (elSummary) elSummary.style.display = isEmpty ? "none" : "";
-    if (elMedal) elMedal.style.display = isEmpty ? "none" : "";
-    if (elPlayed) elPlayed.textContent = String(playedSet);
-    if (elTotal) elTotal.textContent = String(totalCount);
-    if (elList) {
-      const items = [];
-      for (const [id, count] of playedCounts.entries()) {
-        const a = allAttractions.find((x) => String(x.id) === String(id));
-        const name = a ? (a.name_cn || a.name) : null;
-        if (!name) continue;
-        items.push(count > 1 ? `${name}×${count}` : name);
-      }
-      elList.textContent = items.join("、");
-    }
-    if (elPct) elPct.textContent = String(pct);
-
-    // 排名称号：根据百分比追加在 summary 文末（纯文字，不含 emoji）
-    if (elTitle) {
-      let title = "";
-      if (pct >= 99) title = "迪士尼之王";
-      else if (pct >= 90) title = "传说中的勇者";
-      else if (pct >= 80) title = "迪士尼特种兵";
-      else if (pct >= 70) title = "迪士尼玩家";
-      else if (pct >= 60) title = "游园达人";
-      else if (pct >= 50) title = "初来乍到";
-      elTitle.textContent = title;
-    }
-
-    // 奖牌徽章：根据百分比展示金/银/铜（纯 SVG 绘制，含丝带 + 渐变 + 内圈装饰）
-    if (elMedal) {
-      elMedal.innerHTML = buildMedalSvg(pct);
-      elMedal.classList.toggle("is-gold", pct >= 95);
-    }
-  }
-
-  /**
-   * 构造金/银/铜奖牌 SVG。pct < 60 返回空字符串。
-   * 同一时间仅渲染一个奖牌，gradient id 互不重叠以防其它 SVG 引用。
-   */
-  function buildMedalSvg(pct) {
-    let tier = null;
-    if (pct >= 95) tier = "gold";
-    else if (pct >= 80) tier = "silver";
-    else if (pct >= 60) tier = "bronze";
-    if (!tier) return "";
-
-    const palette = {
-      gold:   { top: "#FFD700", bottom: "#DAA520", border: "#B8860B", ribbon: "#B8860B", label: "金" },
-      silver: { top: "#E8E8E8", bottom: "#A8A8A8", border: "#808080", ribbon: "#808080", label: "银" },
-      bronze: { top: "#CD7F32", bottom: "#A0522D", border: "#8B4513", ribbon: "#8B4513", label: "铜" },
-    }[tier];
-    const gradId = `stats-medal-grad-${tier}`;
-    const filter = tier === "gold"
-      ? ' style="filter: drop-shadow(0 0 4px rgba(255,215,0,0.6));"'
-      : '';
-    return `
-      <svg width="36" height="44" viewBox="0 0 36 44" xmlns="http://www.w3.org/2000/svg"${filter}>
-        <defs>
-          <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="${palette.top}"/>
-            <stop offset="100%" stop-color="${palette.bottom}"/>
-          </linearGradient>
-        </defs>
-        <path d="M9 0 L7 18 L14 14 L18 18 L22 14 L29 18 L27 0 Z" fill="${palette.ribbon}" opacity="0.85"/>
-        <circle cx="18" cy="28" r="14" fill="url(#${gradId})" stroke="${palette.border}" stroke-width="2"/>
-        <circle cx="18" cy="28" r="11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.5"/>
-        <circle cx="14" cy="24" r="3" fill="rgba(255,255,255,0.25)"/>
-        <text x="18" y="32" text-anchor="middle" fill="white" font-size="12" font-weight="bold" font-family="-apple-system, 'PingFang SC', sans-serif">${palette.label}</text>
-      </svg>
-    `;
-  }
-
-  // --- 闭园倒计时 ---
-  // 闭园时间硬编码为上海迪士尼乐园标准闭园时间 21:00
-  function updateCountdown() {
-    const elCd = dock.querySelector("#stats-countdown");
-    if (!elCd) return;
-    const now = new Date();
-    const close = new Date(now);
-    close.setHours(21, 0, 0, 0);
-    const diff = close.getTime() - now.getTime();
-    if (diff <= 0) {
-      elCd.textContent = getClosedText();
-      return;
-    }
-    const hours = Math.floor(diff / 3_600_000);
-    const mins = Math.floor((diff % 3_600_000) / 60_000);
-    elCd.textContent = `距离闭园还有 ${hours}h ${mins}min`;
-  }
-
   function getDistLabel(a) {
-    if (userX == null || userZ == null) return "距离计算中…";
+    if (userX == null || userZ == null) return "计算中...";
     const px = a.position_x ?? 0;
     const pz = a.position_z ?? 0;
     const dist = Math.hypot(px - userX, pz - userZ); // 场景单位 ≈ 1m
-    if (dist < 1000) return `${Math.round(dist)}m`;
-    return `${(dist / 1000).toFixed(1)}km`;
+    const distM = Math.round(dist);
+    const minutes = Math.max(1, Math.ceil(dist / 80)); // ~80m/min 步速
+    return `距离${distM}m，步行约${minutes}分钟`;
   }
 
   // 拍照/互动体验类项目 ID 列表（非核心游乐项目，对游客时间利用效率贡献较低，需降权）
@@ -543,19 +541,13 @@ export function mountPlannerApp() {
     close.setHours(21, 0, 0, 0);
     const remainMin = Math.max(0, (close.getTime() - now.getTime()) / 60000);
 
-    // 未玩必玩项目数
-    const unplayedMustCount = mustPlayList.filter(m => !mustPlayDone.has(m)).length;
-
-    // 条件化必玩加分：
-    // - 剩余 > 120 分钟：不加分，让效率和距离决定优先级
-    // - 剩余 60-120 分钟且未玩 >= 2：适度加分(60)，必玩有优势但不碾压近距离低排队项目
-    // - 剩余 < 60 分钟且未玩 >= 1：强推必玩(150)，紧迫时确保必玩完成
+    // 未玩必玩项目加分：根据是否在 mustPlayList 中直接加分
     let mustBonus = 0;
-    if (matchedMust && !mustPlayDone.has(matchedMust) && unplayedMustCount >= 1) {
+    if (matchedMust) {
       if (remainMin <= 60) {
         // 紧迫：强推必玩
         mustBonus = 150;
-      } else if (remainMin <= 120 && unplayedMustCount >= 2) {
+      } else if (remainMin <= 120) {
         // 中等压力：适度加分
         mustBonus = 60;
       } else {
@@ -563,12 +555,6 @@ export function mountPlannerApp() {
         mustBonus = 20;
       }
     }
-
-    // 机会加分：必玩项目排队极短时额外加权
-    const isMustPlay = !!matchedMust;
-    const w2 = waitMap[a.id];
-    const waitMin2 = (w2 && w2.waitMinutes != null) ? w2.waitMinutes : 30;
-    const opportunityBonus = (isMustPlay && waitMin2 <= 15) ? 200 : 0;
 
     // 近距离加分：距离越近加分越高，鼓励就近体验
     // dist < 12 场景单位(~130m): +60
@@ -582,7 +568,10 @@ export function mountPlannerApp() {
     const isPhotoExp = PHOTO_EXPERIENCE_IDS.includes(a.id);
     const photoDiscount = isPhotoExp ? 0.3 : 1;
 
-    return (efficiency + mustBonus + opportunityBonus + proximityBonus) * photoDiscount;
+    // 已玩次数惩罚：每玩一次扣分，避免同一项目反复霸占推荐首位
+    const playedPenalty = playedCounts.has(a.id) ? (playedCounts.get(a.id) * 30) : 0;
+
+    return (efficiency + mustBonus + proximityBonus - playedPenalty) * photoDiscount;
   }
 
   // --- 智能推荐排序：手动优先 + 评分自动补足 + 保底 ---
@@ -619,21 +608,27 @@ export function mountPlannerApp() {
       return true;
     });
 
-    // 合并候选池
-    const allCandidates = [...candidates, ...opportunityItems];
-
-    // 3. 评分排序
-    const scored = allCandidates.map((a) => ({ attraction: a, score: calcScore(a) }));
+    // 3. 常规候选评分排序（未玩过的项目优先）
+    const scored = candidates.map((a) => ({ attraction: a, score: calcScore(a) }));
     scored.sort((a, b) => b.score - a.score);
 
-    // 4. 取 top N（扣除手动推荐占用的名额）
-    const autoSlots = Math.max(0, 5 - manualItems.length);
-    const autoItems = scored.slice(0, autoSlots).map((s) => s.attraction);
+    // 4. 取 top N（手动推荐不占用自动名额，保持3个自动推荐）
+    const autoSlots = 3;
+    const regularItems = scored.slice(0, autoSlots).map((s) => s.attraction);
 
-    // 5. 合并：手动推荐 + 自动推荐
-    let result = [...manualItems, ...autoItems];
+    // 5. 机会推荐项（已玩但低排队的必玩项目）：填充剩余名额，排在后面
+    const remainingSlots = autoSlots - regularItems.length;
+    let opportunityFill = [];
+    if (remainingSlots > 0 && opportunityItems.length > 0) {
+      const oppScored = opportunityItems.map((a) => ({ attraction: a, score: calcScore(a) }));
+      oppScored.sort((a, b) => b.score - a.score);
+      opportunityFill = oppScored.slice(0, remainingSlots).map((s) => s.attraction);
+    }
 
-    // 6. 保底：至少 1 个未关闭项目
+    // 6. 合并：手动推荐 + 常规自动推荐 + 机会推荐（在后面）
+    let result = [...manualItems, ...regularItems, ...opportunityFill];
+
+    // 7. 保底：至少 1 个未关闭项目
     if (result.length === 0) {
       const fallback = allAttractions
         .filter((a) => waitMap[a.id]?.status !== 'closed')
@@ -698,17 +693,7 @@ export function mountPlannerApp() {
     }, 5000);
   }
 
-  // --- 推荐区副标题文案 ---
-  // 推荐数量充足时鼓励效率，剩余不足时切换为收尾文案。
-  function updateRecommendReason() {
-    const el = dock.querySelector("#recommend-reason");
-    if (!el) return;
-    if (attractions.length >= 3) {
-      el.textContent = "智能路线规划，一样的时间让你玩更多";
-    } else if (attractions.length > 0) {
-      el.textContent = "已完成大部分项目，继续加油";
-    }
-  }
+
 
   // --- 步行距离异步更新 ---
   async function updateWalkDistances() {
@@ -745,9 +730,9 @@ export function mountPlannerApp() {
   function applyWalkLabel(id, info) {
     const els = dock.querySelectorAll(`.detail__card[data-id="${id}"] .planner-dock__card-dist`);
     if (!els.length) return;
-    const distStr = info.dist < 1000 ? `${Math.round(info.dist)}m` : `${(info.dist / 1000).toFixed(1)}km`;
-    const minStr = Math.ceil(info.duration / 60);
-    const text = `${distStr}｜步行${minStr}分钟`;
+    const distM = Math.round(Number(info.dist) || 0);
+    const minStr = Math.max(1, Math.ceil((Number(info.duration) || 0) / 60));
+    const text = `距离${distM}m，步行约${minStr}分钟`;
     els.forEach((el) => { el.textContent = text; });
   }
 
@@ -781,9 +766,21 @@ export function mountPlannerApp() {
     if (curBtn) { curBtn.classList.remove("is-navigating"); curBtn.textContent = "开始导航"; }
   }
 
+  // --- 横滑卡片：根据 scroll 位置同步轮播指示器 ---
+  {
+    const scrollEl = dock.querySelector("#planner-dock-scroll");
+    if (scrollEl) {
+      let rafId = 0;
+      scrollEl.addEventListener("scroll", () => {
+        if (rafId) return;
+        rafId = requestAnimationFrame(() => { rafId = 0; updateActiveDot(); });
+      }, { passive: true });
+    }
+  }
+
  // --- 卡片点击 ---
   dock.addEventListener("click", (e) => {
-    // "加入推荐"按钮（其他项目区域）
+    // "开始导航"按钮（其他项目区域）
     const addBtn = e.target.closest("[data-action=add-recommend]");
     if (addBtn) {
       e.stopPropagation();
@@ -792,11 +789,37 @@ export function mountPlannerApp() {
       if (!id) return;
       const item = allAttractions.find((a) => String(a.id) === String(id));
       if (!item) return;
-      // 标记为手动加入，并通过 rankRecommendations 重排（手动项始终保留在前列）
-      manualRecommendIds.add(String(id));
+      // 标记为手动加入推荐（新增项目置顶），并重新渲染（项目移到推荐区域）
+      const idStr = String(id);
+      if (!manualRecommendIds.has(idStr)) {
+        // 重建 Set，将新 id 放在最前面
+        const prev = [...manualRecommendIds];
+        manualRecommendIds.clear();
+        manualRecommendIds.add(idStr);
+        prev.forEach(x => manualRecommendIds.add(x));
+      }
       attractions = rankRecommendations();
       renderCards();
       renderOtherCards();
+      // 中断之前的导航状态，选中当前卡片并开始导航
+      selectCard(id);
+      // 滚动推荐列表到第一个卡片（即新增项目）
+      const scrollContainer = dock.querySelector(".planner-dock__scroll");
+      if (scrollContainer) scrollContainer.scrollTo({ left: 0, behavior: "smooth" });
+      const navBtnNew = dock.querySelector(`.detail__card[data-id="${id}"] [data-action=navigate]`);
+      if (navBtnNew) {
+        navBtnNew.classList.add("is-navigating");
+        navBtnNew.textContent = "导航中...";
+      }
+      navActiveForCard = true;
+      activeCardId = id;
+      window.dispatchEvent(new CustomEvent("attraction-clicked", { detail: { id, attraction: item } }));
+      window.dispatchEvent(new CustomEvent("quick-navigate", { detail: { id } }));
+      window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id, active: true } }));
+      // 记录待选中卡片，收起后由 setDockState 统一处理滚动
+      _pendingNavCardId = id;
+      // 导航激活后将面板收起
+      setDockState("collapsed");
       return;
     }
 
@@ -842,43 +865,29 @@ export function mountPlannerApp() {
         // 同时派发 quick-navigate（获取并绘制 LBS→景点 步行路线）与
         // navigation-toggled（用于状态同步），保持与未选中分支一致的导航效果。
         navBtn.classList.add("is-navigating");
-        navBtn.textContent = "导航中";
+        navBtn.textContent = "导航中...";
         navActiveForCard = true;
         window.dispatchEvent(new CustomEvent("quick-navigate", { detail: { id } }));
         window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id, active: true } }));
+        // 记录待选中卡片，收起后由 setDockState 统一处理滚动
+        _pendingNavCardId = id;
         // 导航激活后将面板收起
-        setDockState("open");
-        // 导航激活后，滚动面板使选中卡片可见
-        const activeCard = dock.querySelector(`.detail__card[data-id="${id}"]`);
-        const panel = dock.querySelector(".planner-dock__panel");
-        if (activeCard && panel) {
-          // 将选中卡片滚动到面板可视区域
-          setTimeout(() => {
-            activeCard.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-          }, 50);
-        }
+        setDockState("collapsed");
       } else {
         // 未选中卡片上点击"开始导航"按钮，先选中卡片再触发导航
         selectCard(id);
         // selectCard 不会自动激活导航按钮，这里显式标记为"导航中"
         navBtn.classList.add("is-navigating");
-        navBtn.textContent = "导航中";
+        navBtn.textContent = "导航中...";
         navActiveForCard = true;
         // 与地图点击保持一致的事件格式：同时携带 id 与 attraction
         const __navItem = allAttractions.find((a) => String(a.id) === String(id));
         window.dispatchEvent(new CustomEvent("attraction-clicked", { detail: { id, attraction: __navItem } }));
         window.dispatchEvent(new CustomEvent("quick-navigate", { detail: { id } }));
+        // 记录待选中卡片，收起后由 setDockState 统一处理滚动
+        _pendingNavCardId = id;
         // 导航激活后将面板收起
-        setDockState("open");
-        // 导航激活后，滚动面板使选中卡片可见
-        const activeCard = dock.querySelector(`.detail__card[data-id="${id}"]`);
-        const panel = dock.querySelector(".planner-dock__panel");
-        if (activeCard && panel) {
-          // 将选中卡片滚动到面板可视区域
-          setTimeout(() => {
-            activeCard.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-          }, 50);
-        }
+        setDockState("collapsed");
       }
       return;
     }
@@ -893,17 +902,24 @@ export function mountPlannerApp() {
         const count = (playedCounts.get(id) || 0) + 1;
         playedCounts.set(id, count);
         card.classList.add("is-done");
-        // 隐藏"待玩"标签
+        // 新版推荐卡片：仅在必玩项目上有 .rec-card__tag，需更新文案为「已玩N次」+ is-played 紫色样式
+        const attractionItem = allAttractions.find((x) => String(x.id) === String(id))
+          || attractions.find((x) => String(x.id) === String(id));
+        const isMustPlayItem = isMustPlayAttraction(attractionItem);
+        const recTag = card.querySelector(".rec-card__tag");
+        if (recTag && isMustPlayItem) {
+          recTag.textContent = `已玩${count}次`;
+          recTag.classList.add("is-played");
+          recTag.classList.remove("is-closed");
+        }
+        // 兼容"其他项目"卡片旧结构：隐藏"待玩"标签，更新"已玩N次"
         const nextTag = card.querySelector(".planner-dock__card-next");
         if (nextTag) nextTag.style.display = "none";
-        // 显示并更新"已玩N次"
         const playedTag = card.querySelector(".detail__played-count");
         if (playedTag) {
           playedTag.style.display = "";
           playedTag.textContent = `已玩${count}次`;
         }
-        checkMustPlayMatch(id);
-        updateStats();
         window.dispatchEvent(new CustomEvent("attraction-done", { detail: { id, count } }));
 
         const isFromOther = !!card.closest("#other-attractions-scroll");
@@ -982,6 +998,46 @@ export function mountPlannerApp() {
     renderOtherCards();
     // 通知地图标签刷新（移除已推荐项的按钮）
     window.dispatchEvent(new CustomEvent("recommend-list-changed"));
+  });
+
+   // --- 监听3D地图标签"开始导航"事件，同步面板为"导航中"状态 ---
+  window.addEventListener("start-navigation", (e) => {
+    const id = e.detail?.id;
+    if (!id) return;
+
+    const idStr = String(id);
+
+    // 1. 如果项目不在推荐列表中，加入手动推荐首位
+    const inList = attractions.some(a => String(a.id) === idStr);
+    if (!inList) {
+      const prev = [...manualRecommendIds];
+      manualRecommendIds.clear();
+      manualRecommendIds.add(idStr);
+      prev.forEach(x => manualRecommendIds.add(x));
+      attractions = rankRecommendations();
+      renderCards();
+      renderOtherCards();
+    }
+
+    // 2. 选中卡片
+    selectCard(id);
+
+    // 3. 设为导航中状态（selectCard 默认不开启导航，需手动覆盖）
+    activeCardId = idStr;
+    navActiveForCard = true;
+
+    const navBtn = dock.querySelector(`.detail__card[data-id="${idStr}"] [data-action=navigate]`);
+    if (navBtn) {
+      navBtn.classList.add("is-navigating");
+      navBtn.textContent = "导航中...";
+    }
+
+    // 4. 滚动到该卡片位置
+    const scrollContainer = dock.querySelector(".planner-dock__scroll");
+    const targetCard = dock.querySelector(`.detail__card[data-id="${idStr}"]`);
+    if (scrollContainer && targetCard) {
+      scrollContainer.scrollTo({ left: targetCard.offsetLeft - 16, behavior: "smooth" });
+    }
   });
 
   // --- 监听地图点击，对应卡片进入与面板点击完全一致的选中态 ---
@@ -1092,9 +1148,6 @@ export function mountPlannerApp() {
 
     renderCards();
     renderOtherCards();
-    syncMustPlayFromPlayed();
-    updateStats();
-    updateCountdown();
   }
 
   // 首次加载
@@ -1104,32 +1157,34 @@ export function mountPlannerApp() {
     setTimeout(() => { appReady = true; }, 15_000);
   });
 
-  // 每 60 秒刷新闭园倒计时
-  setInterval(updateCountdown, 60_000);
 
-  // --- 测试按钮：模拟项目暂停开放 ---
-  window.addEventListener('simulate-closed', () => {
+  // --- 测试按钮：模拟低排队 ---
+  window.addEventListener('simulate-low-wait', () => {
     if (allAttractions.length === 0) return;
 
-    // 从当前推荐列表（attractions）中随机选一个正在开放的项目
-    const openItems = attractions.filter(a => {
+    // 从必玩项目中随机选一个当前排队时间 > 5 分钟的
+    const mustPlayItems = allAttractions.filter(a => a.mustPlay || a.is_must_play);
+    const pool = (mustPlayItems.length > 0 ? mustPlayItems : allAttractions).filter(a => {
       const w = waitMap[a.id];
-      return !w || w.status !== 'closed';
+      return !w || w.waitMinutes > 5;
     });
+    if (pool.length === 0) return;
 
-    if (openItems.length === 0) return;
-
-    const target = openItems[Math.floor(Math.random() * openItems.length)];
-
-    // 将该项目在 waitMap 中设为暂停开放
-    waitMap[target.id] = { waitMinutes: 0, status: 'closed' };
+    const target = pool[Math.floor(Math.random() * pool.length)];
+    waitMap[target.id] = { waitMinutes: 5, status: 'open' };
 
     // 重新排序并渲染
     attractions = rankRecommendations();
     renderCards();
     renderOtherCards();
 
-    console.log('[simulate-closed]', target.name, '已设为暂停开放');
+    // 通知排队标签刷新
+    window.dispatchEvent(new CustomEvent('waittimes-updated', { detail: { waitMap } }));
+
+    // 触发 push 提醒
+    showOpportunityToast(target.name, 5);
+
+    console.log('[simulate-low-wait]', target.name, '排队时间已设为5分钟');
   });
 
   // --- 局部刷新排队时间标签 ---
@@ -1145,26 +1200,85 @@ export function mountPlannerApp() {
       const waitCls = waitColorClass(wm);
       const isClosed = wait?.status === "closed";
       const parkClosed = isParkClosed();
-      const waitText = parkClosed ? getClosedText() : isClosed ? "暂停开放" : (wm == null ? "等待时长：—" : `等待时长：${wm} 分钟`);
+      const waitHtml = buildWaitHtml(a, wait, parkClosed ? 'wait-color--closed' : waitCls);
       const waitDisplayCls = parkClosed ? 'wait-color--closed' : waitCls;
       waitEls.forEach((waitEl) => {
-        waitEl.textContent = waitText;
-        waitEl.className = `detail__wait ${waitDisplayCls}${isClosed ? ' is-closed' : ''}`;
+        waitEl.innerHTML = waitHtml;
+        waitEl.className = `detail__wait`;
       });
     }
   }
 
-  // [已禁用] 排队时间改为使用真实数据，移除自动刷新
-  // refreshTimer = setInterval(async () => {
-  //   const waitList = await fetchWaitTimes();
-  //   waitMap = {};
-  //   for (const w of waitList) {
-  //     waitMap[w.id] = w;
-  //   }
-  //   attractions = rankRecommendations();
-  //   renderCards();
-  //   renderOtherCards();
-  // }, 60_000);
+  // --- 更新"上次刷新时间"标签（相对时间格式）---
+  function updateRefreshTime() {
+    const el = dock.querySelector("#planner-refresh-time");
+    if (!el) return;
+    const diff = Math.floor((Date.now() - lastRefreshTime) / 1000); // 秒
+    if (diff < 10) {
+      el.textContent = '刚刚刷新';
+    } else if (diff < 60) {
+      el.textContent = `${diff}秒前刷新`;
+    } else {
+      const min = Math.floor(diff / 60);
+      el.textContent = `${min}分钟前刷新`;
+    }
+  }
+
+  // --- 每分钟自动刷新推荐项目 ---
+  refreshTimer = setInterval(async () => {
+    const waitList = await fetchWaitTimes();
+    waitMap = {};
+    for (const w of waitList) {
+      waitMap[w.id] = w;
+    }
+    // 保护当前导航中的项目：如果 activeCardId 对应的卡片正在导航，将其保留在手动推荐中
+    if (activeCardId && navActiveForCard) {
+      manualRecommendIds.add(String(activeCardId));
+    }
+    attractions = rankRecommendations();
+    renderCards();
+    renderOtherCards();
+
+    // 兜底：renderCards / renderOtherCards 内部已基于 activeCardId / navActiveForCard 恢复
+    // 视觉状态，但定时刷新会整体重建 DOM 并叠加 is-loading-in 入场动效，
+    // 跨容器（推荐区 ↔ 其他项目）查询或时序错位时可能漏恢复。这里在两次 render 之后
+    // 用 dock 范围的全局查询再次显式应用「is-active + 导航按钮」状态，确保导航中
+    // 卡片在刷新后视觉一致。
+    if (activeCardId) {
+      const activeCard = dock.querySelector(`.detail__card[data-id="${activeCardId}"]`);
+      if (activeCard) {
+        // 已完成的卡片不应保留选中态
+        if (!playedCounts.has(activeCardId)) {
+          activeCard.classList.add("is-active");
+          // 选中态卡片禁用入场位移动效，避免与 is-active 高亮叠加产生抖动
+          activeCard.classList.remove("is-loading-in");
+          activeCard.style.animationDelay = "";
+        }
+        const navBtn = activeCard.querySelector("[data-action=navigate]");
+        if (navBtn) {
+          if (navActiveForCard) {
+            navBtn.classList.add("is-navigating");
+            navBtn.textContent = "导航中...";
+          } else {
+            navBtn.classList.remove("is-navigating");
+            navBtn.textContent = "开始导航";
+          }
+        }
+      }
+    }
+
+    lastRefreshTime = Date.now(); // 更新刷新时间戳
+    updateRefreshTime();
+  }, 60_000);
+
+  // 每10秒更新相对时间显示
+  refreshDisplayTimer = setInterval(() => {
+    updateRefreshTime();
+  }, 10_000);
+
+  // 首次加载完成后初始化刷新时间
+  lastRefreshTime = Date.now();
+  updateRefreshTime();
 
   return { dock, setCollapsed, expand: () => setCollapsed(false) };
 }

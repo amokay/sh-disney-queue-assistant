@@ -3,6 +3,7 @@ import { readGeoReferenceFromDisk, latLngToSceneXZ } from "./geoProject.js";
 import { buildBaiduSceneWalkDetailed } from "./baiduWalkingSceneRoute.js";
 import { buildAmapSceneWalkDetailed } from "./amapWalkingSceneRoute.js";
 import { clipWalkResult } from "./parkBoundaryClip.js";
+import { findPath, pathDistance, sceneDistToMeters, walkDurationSeconds } from "./parkRoadGraphService.js";
 
 /**
  * 百度失败 → 高德；仍失败 → 景点直线兜底（保证 smart-plan 不因步行 API 整单失败）。
@@ -15,6 +16,14 @@ export async function buildSceneWalkDetailed(attractionIdsInOrder, startPosition
     return { points: [], distanceMeters: 0, durationSeconds: 0, segments: [], provider: "none" };
   }
 
+  // ── 优先使用 park_roads 路网图寻路 ──────────────────────────────
+  const parkRoadResult = tryParkRoadRoute(ids, startPosition);
+  if (parkRoadResult) {
+    console.log(`[walk] park-road 多段寻路成功: ${parkRoadResult.points.length} 点, ${parkRoadResult.distanceMeters}m`);
+    return parkRoadResult;
+  }
+
+  // ── fallback: 百度/高德 API ────────────────────────────────────
   const prefer = (process.env.WALK_ROUTE_PROVIDER || "baidu-then-amap").toLowerCase();
 
   if (prefer === "amap") {
@@ -51,6 +60,94 @@ export async function buildSceneWalkDetailed(attractionIdsInOrder, startPosition
   } catch (aErr) {
     console.warn("[walk] 高德步行失败，使用直线估算:", aErr?.message || aErr);
     return clipWalkResult({ ...buildStraightLineWalkFallback(ids, startPosition), provider: "straight" });
+  }
+}
+
+/**
+ * 尝试使用 park_roads 路网图对多段行程进行寻路。
+ * 所有段均成功时返回结果，任一段失败返回 null（由调用方 fallback）。
+ * @param {string[]} ids
+ * @param {{ gcj_lat?: number, gcj_lng?: number, scene_x?: number, scene_z?: number } | null} startPosition
+ * @returns {{ points: Array, distanceMeters: number, durationSeconds: number, segments: Array, provider: string } | null}
+ */
+function tryParkRoadRoute(ids, startPosition) {
+  try {
+    const waypoints = []; // [{ id, name, x, z }]
+
+    // 构建起点
+    if (startPosition) {
+      let sx, sz;
+      if (startPosition.scene_x != null && startPosition.scene_z != null) {
+        sx = Number(startPosition.scene_x);
+        sz = Number(startPosition.scene_z);
+      } else if (startPosition.gcj_lat != null && startPosition.gcj_lng != null) {
+        const ref = readGeoReferenceFromDisk();
+        if (!ref) return null;
+        const sc = latLngToSceneXZ(startPosition.gcj_lat, startPosition.gcj_lng, ref);
+        sx = sc.x; sz = sc.z;
+      }
+      if (sx != null && sz != null) {
+        waypoints.push({ id: "__lbs__", name: "我的位置", x: sx, z: sz });
+      }
+    }
+
+    // 构建景点节点
+    for (const aid of ids) {
+      const a = getAttractionById(aid);
+      if (!a) return null; // 景点不存在，fallback
+      const ax = Number(a.position_x);
+      const az = Number(a.position_z);
+      if (!isFinite(ax) || !isFinite(az)) return null;
+      waypoints.push({ id: a.id, name: a.name, x: ax, z: az });
+    }
+
+    if (waypoints.length < 2) return null;
+
+    // 逐段寻路
+    const allPoints = [];
+    const segments = [];
+    let totalDist = 0;
+    let totalDur = 0;
+
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const from = waypoints[i];
+      const to = waypoints[i + 1];
+      const legPath = findPath(from.x, from.z, to.x, to.z);
+      if (!legPath || legPath.length < 2) return null; // 任一段失败则整体 fallback
+
+      const legSceneDist = pathDistance(legPath);
+      const legMeters = Math.round(sceneDistToMeters(legSceneDist));
+      const legSeconds = walkDurationSeconds(legMeters);
+      totalDist += legMeters;
+      totalDur += legSeconds;
+
+      // 拼接点：避免相邻段起终点重复
+      const startIdx = (allPoints.length > 0) ? 1 : 0;
+      for (let j = startIdx; j < legPath.length; j++) {
+        allPoints.push(legPath[j]);
+      }
+
+      segments.push({
+        fromId: from.id,
+        toId: to.id,
+        fromName: from.name,
+        toName: to.name,
+        distanceMeters: legMeters,
+        durationSeconds: legSeconds,
+        points: legPath,
+      });
+    }
+
+    return {
+      points: allPoints,
+      distanceMeters: totalDist,
+      durationSeconds: totalDur,
+      segments,
+      provider: "park-road",
+    };
+  } catch (e) {
+    console.warn("[walk] park-road 多段寻路失败, fallback:", e?.message || e);
+    return null;
   }
 }
 

@@ -1,11 +1,19 @@
 {
+  "_说明": "每个模型的位置/旋转/缩放。用页面右上角的「模型调参面板」拖滑块调整，调好后点「复制配置」粘贴到这里替换即可。",
+  "_字段解释": {
+    "match": "匹配模型文件名中包含这段文字的模型（不用改）",
+    "position": "位置 [左右X, 上下Y, 前后Z]",
+    "rotationDeg": "旋转角度 [X轴, Y轴水平转, Z轴]，一般只改 Y",
+    "scale": "缩放大小，1=原始大小，0.5=缩小一半，2=放大两倍"
+  },
   "rules": [
     {
+      "_名称": "地面",
       "match": "ground",
       "position": [
-        0,
-        -1,
-        0
+        -0.8,
+        0.5,
+        3.1
       ],
       "rotationDeg": [
         0,
@@ -15,6 +23,7 @@
       "scale": 3
     },
     {
+      "_名称": "奇幻童话城堡",
       "match": "Main_castle",
       "position": [
         -23.550396429517647,
@@ -32,31 +41,34 @@
       "match": "landmarks/02_seven-dwarfs-mine-train",
       "position": [
         -22.71905595175705,
-        0.5,
+        1,
         -59.42928541249386
       ],
       "rotationDeg": [
         0,
-        50,
+        2,
         0
       ],
-      "scale": 0.2
+      "scale": 0.5,
+      "_名称": "七个小矮人矿山车"
     },
     {
+      "_名称": "加勒比海盗",
       "match": "landmarks/03_caribbean-pirates",
       "position": [
-        -5.12,
-        0.5,
-        -63.94
+        -1.8,
+        0.6,
+        -63.6
       ],
       "rotationDeg": [
         0,
-        0,
+        2,
         0
       ],
-      "scale": 0.18
+      "scale": 0.49
     },
     {
+      "_名称": "创极速光轮",
       "match": "landmarks/04_tron-lightcycle",
       "position": [
         -50.63,
@@ -74,7 +86,7 @@
       "match": "landmarks/05_fantasia-carousel",
       "position": [
         -8.743939729218862,
-        1.2,
+        0.5,
         -32.8489633299035
       ],
       "rotationDeg": [
@@ -82,9 +94,11 @@
         0,
         0
       ],
-      "scale": 0.25
+      "scale": 0.26,
+      "_名称": "幻想曲旋转木马"
     },
     {
+      "_名称": "船奇戏水滩",
       "match": "landmarks/06_shipwreck-shore",
       "position": [
         -2.9,
@@ -99,6 +113,7 @@
       "scale": 0.17
     },
     {
+      "_名称": "爱丽丝梦游仙境迷宫",
       "match": "landmarks/07_alice-maze",
       "position": [
         -23.5,
@@ -113,6 +128,7 @@
       "scale": 0.3
     },
     {
+      "_名称": "探险家独木舟",
       "match": "landmarks/08_canoe",
       "position": [
         0,
@@ -125,6 +141,372 @@
         0
       ],
       "scale": 0.25
+    },
+    {
+      "match": "pool",
+      "position": [
+        1.4,
+        0.5,
+        2.1
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 3,
+      "_名称": "泳池"
+    },
+    {
+      "match": "far",
+      "position": [
+        0,
+        8,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 300
+    },
+    {
+      "match": "VegetationRoot",
+      "position": [
+        -0.8,
+        0.5,
+        3.1
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 3,
+      "_名称": "植被整体"
+    },
+    {
+      "match": "vegetation/Berry Bush 1",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Berry Bush 2",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Berry Bush 3",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Berry Bush 4",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Berry Bush 5",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Bush",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Flower1",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Flower2",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Flower3",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Grass1",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Grass2",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Hojas1",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Hojas3",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Lumpy Bush 1",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Lumpy Bush 2",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Multi Bush 1",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Multi Bush 2",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Tronco1",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/Tronco3",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "vegetation/grass3",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 1
+    },
+    {
+      "match": "02_seven-dwarfs-mine-train",
+      "position": [
+        -19.4,
+        0.7,
+        -57.7
+      ],
+      "rotationDeg": [
+        0,
+        2,
+        0
+      ],
+      "scale": 0.5
+    },
+    {
+      "match": "landmarks/01_Main_castle",
+      "position": [
+        -0.8,
+        0.4,
+        3.1
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 3
+    },
+    {
+      "match": "02drawfpeijian",
+      "position": [
+        -0.8,
+        0.9,
+        3.1
+      ],
+      "rotationDeg": [
+        0,
+        0,
+        0
+      ],
+      "scale": 3
     }
   ]
 }

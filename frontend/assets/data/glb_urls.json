@@ -1,6 +1,6 @@
 {
   "urls": [
-    "/assets/models/optimized/landmarks/01_Main_castle.glb",
+    "/assets/models/optimized/landmarks/01_Main_castle.glb?v=2",
     "/assets/models/optimized/landmarks/02_seven-dwarfs-mine-train.glb",
     "/assets/models/optimized/landmarks/03_caribbean-pirates.glb",
     "/assets/models/optimized/landmarks/04_tron-lightcycle.glb",
@@ -8,6 +8,7 @@
     "/assets/models/optimized/landmarks/06_shipwreck-shore.glb",
     "/assets/models/optimized/landmarks/07_alice-maze.glb",
     "/assets/models/optimized/landmarks/08_canoe.glb",
-    "/assets/models/optimized/zones/ground.glb"
+    "/assets/models/optimized/ground.glb?v=2",
+    "/assets/models/optimized/pool.glb"
   ]
 }

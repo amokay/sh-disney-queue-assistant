@@ -5,6 +5,7 @@ import { amapDirectionWalking } from "./amapWebService.js";
 import { buildLegPoints } from "./baiduWalkingSceneRoute.js";
 import { densifyLatLngRing, parseLngLatSemicolonPolyline } from "./walkRouteGeo.js";
 import { clipWalkResult } from "./parkBoundaryClip.js";
+import { findPath, pathDistance, sceneDistToMeters, walkDurationSeconds } from "./parkRoadGraphService.js";
 
 const MAX_EDGE_M = 2.5;
 
@@ -18,6 +19,32 @@ const MAX_EDGE_M = 2.5;
 export async function buildWalkFromSceneToAttraction(sceneX, sceneZ, attractionId) {
   const dest = getAttractionById(attractionId);
   if (!dest) throw new Error(`未知景点: ${attractionId}`);
+
+  // ── 优先使用 park_roads 路网图寻路 ──────────────────────────────
+  const targetX = Number(dest.position_x);
+  const targetZ = Number(dest.position_z);
+  if (isFinite(targetX) && isFinite(targetZ)) {
+    try {
+      const roadPath = findPath(Number(sceneX), Number(sceneZ), targetX, targetZ);
+      if (roadPath && roadPath.length >= 2) {
+        const sceneDist = pathDistance(roadPath);
+        const distMeters = Math.round(sceneDistToMeters(sceneDist));
+        const durSeconds = walkDurationSeconds(distMeters);
+        console.log(`[walk] park-road 寻路成功: ${roadPath.length} 点, ${distMeters}m, ${durSeconds}s`);
+        return {
+          points: roadPath,
+          distanceMeters: distMeters,
+          durationSeconds: durSeconds,
+          segments: [],
+          provider: "park-road",
+        };
+      }
+    } catch (e) {
+      console.warn("[walk] park-road 寻路失败, fallback:", e?.message || e);
+    }
+  }
+
+  // ── fallback: 百度/高德 API ────────────────────────────────────
   const ref = readGeoReferenceFromDisk();
   if (!ref) throw new Error("geo_reference.json 缺失或无效");
 
