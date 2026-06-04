@@ -1225,7 +1225,7 @@ export function mountPlannerApp() {
     }
   }
 
-  // --- 每分钟自动刷新推荐项目 ---
+  // --- 每60秒自动刷新推荐项目 ---
   refreshTimer = setInterval(async () => {
     const waitList = await fetchWaitTimes();
     waitMap = {};
@@ -1272,10 +1272,10 @@ export function mountPlannerApp() {
     updateRefreshTime();
   }, 60_000);
 
-  // 每10秒更新相对时间显示
+  // 每30秒更新相对时间显示
   refreshDisplayTimer = setInterval(() => {
     updateRefreshTime();
-  }, 10_000);
+  }, 30_000);
 
   // 首次加载完成后初始化刷新时间
   lastRefreshTime = Date.now();

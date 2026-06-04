@@ -213,9 +213,9 @@ app.use((req, res, next) => {
   }
   next();
 });
-// 默认首页指向 Babylon.js 入口（main_new.js 依赖 Babylon 引擎）
+// 默认首页指向 phone-frame 外框页
 app.get("/", (req, res) => {
-  res.redirect("/index_babylon.html");
+  res.redirect("/phone-frame.html");
 });
 app.use(express.static(frontendDir, { index: false }));
 // 将 node_modules/three 本地化挂载，避免依赖 CDN（支持离线访问）
