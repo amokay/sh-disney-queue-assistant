@@ -50,14 +50,12 @@ let _progressInterval = null;
 let _loadingFinished = false;
 
 function updateLoadingProgress(percent) {
-  const fill = document.querySelector('.progress-ring__fill');
-  const text = document.querySelector('.progress-text');
-  if (!fill || !text) return;
+  const fill = document.getElementById('progress-ring-fill') || document.querySelector('.progress-ring__fill');
+  if (!fill) return;
   const circumference = 2 * Math.PI * 36; // ≈ 226.2
   const clamped = Math.max(0, Math.min(100, percent));
   const offset = circumference * (1 - clamped / 100);
   fill.style.strokeDashoffset = String(offset);
-  text.textContent = Math.round(clamped) + '%';
 }
 
 function startFakeLoadingProgress() {

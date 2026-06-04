@@ -837,6 +837,10 @@ export function mountPlannerApp() {
         manualRecommendIds.delete(String(id));
         // 如果移除的是当前选中卡片，清除选中态
         if (String(activeCardId) === String(id)) {
+          // 通知3D场景取消导航状态
+          if (navActiveForCard) {
+            window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id: activeCardId, active: false } }));
+          }
           activeCardId = null;
           navActiveForCard = false;
           window.dispatchEvent(new CustomEvent("route-preview", { detail: {} }));
@@ -930,6 +934,10 @@ export function mountPlannerApp() {
           const navBtn2 = card.querySelector("[data-action=navigate]");
           if (navBtn2) { navBtn2.classList.remove("is-navigating"); navBtn2.textContent = "开始导航"; }
           if (String(activeCardId) === String(id)) {
+            // 通知3D场景取消导航状态
+            if (navActiveForCard) {
+              window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id: activeCardId, active: false } }));
+            }
             activeCardId = null;
             navActiveForCard = false;
             window.dispatchEvent(new CustomEvent("route-preview", { detail: {} }));
@@ -947,6 +955,10 @@ export function mountPlannerApp() {
             manualRecommendIds.delete(String(id));
             // 已玩过的卡片若处于选中态则取消选中
             if (String(activeCardId) === String(id)) {
+              // 通知3D场景取消导航状态
+              if (navActiveForCard) {
+                window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id: activeCardId, active: false } }));
+              }
               activeCardId = null;
               navActiveForCard = false;
             }
@@ -975,6 +987,12 @@ export function mountPlannerApp() {
     if (!card) return;
     const id = card.dataset.id;
     if (!id) return;
+
+    // 如果当前正在导航中，先取消导航状态通知3D场景，
+    // 避免 _isNavigating 残留导致 attraction-clicked 事件被忽略
+    if (navActiveForCard) {
+      window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id: activeCardId, active: false } }));
+    }
 
     selectCard(id);
 
