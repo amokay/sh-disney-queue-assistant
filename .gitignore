@@ -26,8 +26,9 @@ Thumbs.db
 # 大型生成数据（前端由脚本生成，不需要索引）
 frontend/assets/data/park_roads.json
 
-# 3D 二进制模型
-*.glb
+# 3D 二进制模型（仅忽略 source 目录下的原始模型）
+frontend/assets/models/source/*.glb
+tools/*_source.glb
 
 # 构建与本地环境
 dist
