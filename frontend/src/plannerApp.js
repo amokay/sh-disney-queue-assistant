@@ -770,6 +770,33 @@ export function mountPlannerApp() {
     els.forEach((el) => { el.textContent = text; });
   }
 
+  // --- 导航卡片切换辅助 ---
+  // 任何切换正在导航的卡片的代码路径都必须经由此函数，
+  // 以保证：1) 旧导航卡片 DOM 状态被清除；2) navigation-toggled 事件正确成对派发；
+  //         3) 同一时间最多只有一张卡片处于 is-navigating 状态。
+  function setNavigatingCard(newId) {
+    const newIdStr = newId == null ? null : String(newId);
+    const oldId = navigatingCardId;
+
+    // 若旧卡片与新卡片不同（含取消导航即 newIdStr=null 的情况），
+    // 先清除旧卡片的 DOM 状态并派发取消事件，避免出现两张卡片同时显示"导航中..."
+    if (oldId && String(oldId) !== newIdStr) {
+      const oldBtn = dock.querySelector(`.detail__card[data-id="${oldId}"] [data-action=navigate]`);
+      if (oldBtn) {
+        oldBtn.classList.remove("is-navigating");
+        oldBtn.textContent = "开始导航";
+      }
+      window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id: oldId, active: false } }));
+    }
+
+    navigatingCardId = newIdStr;
+    navActiveForCard = !!newIdStr;
+
+    if (newIdStr) {
+      window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id: newIdStr, active: true } }));
+    }
+  }
+
   // --- 通用卡片选中逻辑 ---
   // 仅负责选中态与滚动定位，不自动开启导航。
   // 导航需由用户显式点击"开始导航"按钮触发。
@@ -805,6 +832,14 @@ export function mountPlannerApp() {
           btn.textContent = "开始导航";
         }
       }
+    });
+    // 额外兑底：任何资源上状态不一致导致某张非选中卡片仍有 is-navigating，也在这里重置
+    dock.querySelectorAll(".detail__card [data-action=navigate].is-navigating").forEach(btn => {
+      const cardEl = btn.closest(".detail__card");
+      if (!cardEl) return;
+      if (navigatingCardId && String(cardEl.dataset.id) === String(navigatingCardId)) return;
+      btn.classList.remove("is-navigating");
+      btn.textContent = "开始导航";
     });
     card.classList.add("is-active");
     card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
@@ -864,12 +899,11 @@ export function mountPlannerApp() {
         navBtnNew.classList.add("is-navigating");
         navBtnNew.textContent = "导航中...";
       }
-      navActiveForCard = true;
-      navigatingCardId = id;
       activeCardId = id;
+      // setNavigatingCard 会清理旧导航卡片状态并派发 navigation-toggled 事件
+      setNavigatingCard(id);
       window.dispatchEvent(new CustomEvent("attraction-clicked", { detail: { id, attraction: item } }));
       window.dispatchEvent(new CustomEvent("quick-navigate", { detail: { id } }));
-      window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id, active: true } }));
       // 记录待选中卡片，收起后由 setDockState 统一处理滚动
       _pendingNavCardId = id;
       // 导航激活后将面板收起
@@ -890,13 +924,9 @@ export function mountPlannerApp() {
         manualRecommendIds.delete(String(id));
         // 如果移除的是当前选中卡片，清除选中态
         if (String(activeCardId) === String(id)) {
-          // 通知3D场景取消导航状态
-          if (navActiveForCard) {
-            window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id: activeCardId, active: false } }));
-          }
+          // setNavigatingCard(null) 内部会在原本存在导航时派发 navigation-toggled active:false
+          setNavigatingCard(null);
           activeCardId = null;
-          navActiveForCard = false;
-          navigatingCardId = null;
           window.dispatchEvent(new CustomEvent("route-preview", { detail: {} }));
         }
         attractions = rankRecommendations();
@@ -915,21 +945,16 @@ export function mountPlannerApp() {
 
       // 如果按钮处于"导航中"状态（is-navigating），切换为暂停
       if (navBtn.classList.contains("is-navigating")) {
-        navBtn.classList.remove("is-navigating");
-        navBtn.textContent = "开始导航";
-        navActiveForCard = false;
-        navigatingCardId = null;
-        window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id, active: false } }));
+        // setNavigatingCard(null) 会重置按钮状态并派发 navigation-toggled active:false
+        setNavigatingCard(null);
       } else if (card.classList.contains("is-active")) {
         // 按钮处于"开始导航"状态（已选中卡片内），切换为启动导航：
         // 同时派发 quick-navigate（获取并绘制 LBS→景点 步行路线）与
         // navigation-toggled（用于状态同步），保持与未选中分支一致的导航效果。
         navBtn.classList.add("is-navigating");
         navBtn.textContent = "导航中...";
-        navActiveForCard = true;
-        navigatingCardId = id;
+        setNavigatingCard(id);
         window.dispatchEvent(new CustomEvent("quick-navigate", { detail: { id } }));
-        window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id, active: true } }));
         // 记录待选中卡片，收起后由 setDockState 统一处理滚动
         _pendingNavCardId = id;
         // 导航激活后将面板收起
@@ -940,13 +965,11 @@ export function mountPlannerApp() {
         // selectCard 不会自动激活导航按钮，这里显式标记为"导航中"
         navBtn.classList.add("is-navigating");
         navBtn.textContent = "导航中...";
-        navActiveForCard = true;
-        navigatingCardId = id;
+        setNavigatingCard(id);
         // 与地图点击保持一致的事件格式：同时携带 id 与 attraction
         const __navItem = allAttractions.find((a) => String(a.id) === String(id));
         window.dispatchEvent(new CustomEvent("attraction-clicked", { detail: { id, attraction: __navItem } }));
         window.dispatchEvent(new CustomEvent("quick-navigate", { detail: { id } }));
-        window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id, active: true } }));
         // 记录待选中卡片，收起后由 setDockState 统一处理滚动
         _pendingNavCardId = id;
         // 导航激活后将面板收起
@@ -992,13 +1015,9 @@ export function mountPlannerApp() {
           const navBtn2 = card.querySelector("[data-action=navigate]");
           if (navBtn2) { navBtn2.classList.remove("is-navigating"); navBtn2.textContent = "开始导航"; }
           if (String(activeCardId) === String(id)) {
-            // 通知3D场景取消导航状态
-            if (navActiveForCard) {
-              window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id: activeCardId, active: false } }));
-            }
+            // setNavigatingCard(null) 在原本存在导航时会派发 navigation-toggled active:false
+            setNavigatingCard(null);
             activeCardId = null;
-            navActiveForCard = false;
-            navigatingCardId = null;
             window.dispatchEvent(new CustomEvent("route-preview", { detail: {} }));
           }
           // 已玩过后重新排序推荐
@@ -1014,13 +1033,9 @@ export function mountPlannerApp() {
             manualRecommendIds.delete(String(id));
             // 已玩过的卡片若处于选中态则取消选中
             if (String(activeCardId) === String(id)) {
-              // 通知3D场景取消导航状态
-              if (navActiveForCard) {
-                window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id: activeCardId, active: false } }));
-              }
+              // setNavigatingCard(null) 在原本存在导航时会派发 navigation-toggled active:false
+              setNavigatingCard(null);
               activeCardId = null;
-              navActiveForCard = false;
-              navigatingCardId = null;
             }
             // 重新智能排序（已玩项会被排除在候选池之外）
             attractions = rankRecommendations();
@@ -1117,8 +1132,8 @@ export function mountPlannerApp() {
 
     // 3. 设为导航中状态（selectCard 默认不开启导航，需手动覆盖）
     activeCardId = idStr;
-    navActiveForCard = true;
-    navigatingCardId = idStr;
+    // setNavigatingCard 会清理旧导航卡片状态并派发 navigation-toggled 事件
+    setNavigatingCard(idStr);
 
     const navBtn = dock.querySelector(`.detail__card[data-id="${idStr}"] [data-action=navigate]`);
     if (navBtn) {
