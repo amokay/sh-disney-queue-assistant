@@ -4,7 +4,7 @@ export function showLoading() {
   if (el) return;
   el = document.createElement("div");
   el.id = "global-loading";
-  el.innerHTML = `<div class="loading__card">加载中…</div>`;
+  el.innerHTML = `<div class="loading__card"></div>`;
   el.style.cssText = [
     "position:fixed",
     "inset:0",
