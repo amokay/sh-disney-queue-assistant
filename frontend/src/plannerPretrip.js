@@ -305,6 +305,8 @@ export function mountPlannerPretrip() {
 
   // 判断当前是否闭园时段
   function isParkClosed() {
+    // 行前模式展示预估排队时间，不根据实时时间判断闭园
+    if (typeof window !== "undefined" && window.__PRETRIP_MODE__) return false;
     const h = new Date().getHours();
     return h >= 21 || h < 8;
   }
@@ -694,6 +696,11 @@ export function mountPlannerPretrip() {
     // 更新刷新时间标签
     const el = dock.querySelector("#planner-refresh-time");
     if (el) el.textContent = `AI智能预测`;
+
+    // 通知 3D 场景刷新排队时间标签（行前模式日期Tab切换联动）
+    window.dispatchEvent(new CustomEvent('predicted-waits-updated', {
+      detail: { waitMap }
+    }));
   }
 
   // 首次加载

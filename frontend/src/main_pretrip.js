@@ -194,6 +194,26 @@ async function main() {
       scene3d.setLabelsVisible(true);
     }
 
+    // ─── 行前模式：日期Tab切换后联动刷新 3D 排队时间标签 ───
+    window.addEventListener('predicted-waits-updated', (e) => {
+      const newWaitMap = e.detail?.waitMap;
+      if (!newWaitMap || !merged || merged.length === 0) return;
+
+      // 同步更新 merged 中的排队数据
+      for (const a of merged) {
+        const w = newWaitMap[a.id];
+        if (w) {
+          a.waitMinutes = w.waitMinutes;
+          a.status = w.status;
+        }
+      }
+
+      // 重建3D标签
+      if (SHOW_WAIT_LABELS_3D) {
+        scene3d.rebuildWaitLabels(merged, modelTopYMap);
+      }
+    });
+
     // ─── 树木 ───
     if (SHOW_DEMO_TREES) {
       const treePos = await loadTreePositions();
