@@ -105,11 +105,11 @@ export function mountPlannerPretrip() {
       </button>
       <h2 class="planner-dock__title-gradient">提前规划游玩项目，让你省时玩更多<span class="planner-dock__refresh-time" id="planner-refresh-time"></span></h2>
       <div class="planner-dock__date-tabs" id="planner-date-tabs">
-        <div class="planner-dock__date-tab is-active" data-date="2025-06-16">
-          <span class="planner-dock__date-tab-main">6月16日<span class="planner-dock__date-tab-sub">高峰</span></span>
+        <div class="planner-dock__date-tab is-active" data-date="2025-06-21">
+          <span class="planner-dock__date-tab-main">6月21日<span class="planner-dock__date-tab-sub">高峰</span></span>
         </div>
-        <div class="planner-dock__date-tab" data-date="2025-06-17">
-          <span class="planner-dock__date-tab-main">6月17日</span>
+        <div class="planner-dock__date-tab" data-date="2025-06-22">
+          <span class="planner-dock__date-tab-main">6月22日</span>
         </div>
         <span class="planner-dock__date-tabs-indicator" id="planner-date-indicator"></span>
       </div>
@@ -189,8 +189,8 @@ export function mountPlannerPretrip() {
     "hunny-pot-spin": "亲子轻松项目，随时可安排"
   };
 
-  // 6月17日推荐理由（非高峰日，2日游第二天，兼顾亲子/情侣）
-  const REASON_MAP_0617 = {
+  // 6月22日推荐理由（平日，2日游第二天，兼顾亲子/情侣）
+  const REASON_MAP_0622 = {
     "pirates": "非高峰日排队更短，亲子情侣都适合的沉浸体验",
     "soaring": "平日排队约30分钟，适合第二天从容体验",
     "peter-pan": "梦幻世界经典项目，亲子首选，平日几乎免排",
@@ -210,8 +210,8 @@ export function mountPlannerPretrip() {
     "camp-discovery": "户外攀爬探险，平日随到随玩"
   };
 
-  // 6月17日推荐项目顺序（第二天策略：补充前一天未玩 + 平日优势项目）
-  const FIXED_ORDER_0617 = [
+  // 6月22日推荐项目顺序（第二天策略：补充前一天未玩 + 平日优势项目）
+  const FIXED_ORDER_0622 = [
     "pirates",
     "soaring",
     "peter-pan",
@@ -221,9 +221,9 @@ export function mountPlannerPretrip() {
     "winnie-the-pooh"
   ];
 
-  function isJune17Active() {
+  function isJune22Active() {
     const activeTab = dock.querySelector(".planner-dock__date-tab.is-active");
-    return activeTab && activeTab.dataset.date === "2025-06-17";
+    return activeTab && activeTab.dataset.date === "2025-06-22";
   }
 
   // 必玩挑战
@@ -324,10 +324,21 @@ export function mountPlannerPretrip() {
     return `${String(clamped).padStart(2, "0")}:00`;
   }
 
+  // 获取当前选中日期对应的 dateKey（"6-21" 或 "6-22"）
+  function getActiveDateKey() {
+    const activeTab = dock.querySelector(".planner-dock__date-tab.is-active");
+    if (!activeTab) return "6-21";
+    const d = activeTab.dataset.date; // "2025-06-21" or "2025-06-22"
+    if (d === "2025-06-22") return "6-22";
+    return "6-21";
+  }
+
   // 构造排队时间 HTML（行前版：显示"预测X分钟"）
   // 计算景点全天平均排队时间
   function getAvgWait(id) {
-    const slots = PREDICTED_WAITS[id];
+    const dateKey = getActiveDateKey();
+    const dayData = PREDICTED_WAITS[dateKey] || PREDICTED_WAITS["6-21"];
+    const slots = dayData[id];
     if (!slots) return null;
     const vals = Object.values(slots).filter(v => v != null);
     if (vals.length === 0) return null;
@@ -390,7 +401,7 @@ export function mountPlannerPretrip() {
               ${tagHtml}
             </div>
             <div class="rec-card__wait detail__wait">${waitHtml}</div>
-            <div class="rec-card__dist planner-dock__card-dist"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.50417 0.300548C4.54237 0.197308 4.6884 0.197308 4.7266 0.300548C5.44724 2.24805 6.98272 3.78353 8.93022 4.50417C9.03346 4.54237 9.03346 4.6884 8.93022 4.7266C6.98272 5.44724 5.44724 6.98272 4.7266 8.93022C4.6884 9.03346 4.54237 9.03346 4.50417 8.93022C3.78353 6.98272 2.24805 5.44724 0.300548 4.7266C0.197308 4.6884 0.197308 4.54237 0.300548 4.50417C2.24805 3.78353 3.78353 2.24805 4.50417 0.300548Z" fill="url(#paint0_linear_498_1008)"/><path d="M9.63661 7.53492C9.65571 7.4833 9.72872 7.4833 9.74782 7.53492C10.1081 8.50867 10.8759 9.27641 11.8496 9.63673C11.9013 9.65583 11.9013 9.72884 11.8496 9.74794C10.8759 10.1083 10.1081 10.876 9.74782 11.8498C9.72872 11.9014 9.65571 11.9014 9.63661 11.8498C9.27629 10.876 8.50855 10.1083 7.5348 9.74794C7.48318 9.72884 7.48318 9.65583 7.5348 9.63673C8.50855 9.27641 9.27629 8.50867 9.63661 7.53492Z" fill="url(#paint1_linear_498_1008)"/><defs><linearGradient id="paint0_linear_498_1008" x1="0.373303" y1="1.19745" x2="9.14803" y2="7.28043" gradientUnits="userSpaceOnUse"><stop stop-color="#6666FF"/></linearGradient><linearGradient id="paint1_linear_498_1008" x1="7.57117" y1="7.98337" x2="11.9585" y2="11.0249" gradientUnits="userSpaceOnUse"><stop stop-color="#6666FF"/></linearGradient></defs></svg>${(isJune17Active() ? REASON_MAP_0617[a.id] : REASON_MAP[a.id]) || a.zone || ''}</div>
+            <div class="rec-card__dist planner-dock__card-dist"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.50417 0.300548C4.54237 0.197308 4.6884 0.197308 4.7266 0.300548C5.44724 2.24805 6.98272 3.78353 8.93022 4.50417C9.03346 4.54237 9.03346 4.6884 8.93022 4.7266C6.98272 5.44724 5.44724 6.98272 4.7266 8.93022C4.6884 9.03346 4.54237 9.03346 4.50417 8.93022C3.78353 6.98272 2.24805 5.44724 0.300548 4.7266C0.197308 4.6884 0.197308 4.54237 0.300548 4.50417C2.24805 3.78353 3.78353 2.24805 4.50417 0.300548Z" fill="url(#paint0_linear_498_1008)"/><path d="M9.63661 7.53492C9.65571 7.4833 9.72872 7.4833 9.74782 7.53492C10.1081 8.50867 10.8759 9.27641 11.8496 9.63673C11.9013 9.65583 11.9013 9.72884 11.8496 9.74794C10.8759 10.1083 10.1081 10.876 9.74782 11.8498C9.72872 11.9014 9.65571 11.9014 9.63661 11.8498C9.27629 10.876 8.50855 10.1083 7.5348 9.74794C7.48318 9.72884 7.48318 9.65583 7.5348 9.63673C8.50855 9.27641 9.27629 8.50867 9.63661 7.53492Z" fill="url(#paint1_linear_498_1008)"/><defs><linearGradient id="paint0_linear_498_1008" x1="0.373303" y1="1.19745" x2="9.14803" y2="7.28043" gradientUnits="userSpaceOnUse"><stop stop-color="#6666FF"/></linearGradient><linearGradient id="paint1_linear_498_1008" x1="7.57117" y1="7.98337" x2="11.9585" y2="11.0249" gradientUnits="userSpaceOnUse"><stop stop-color="#6666FF"/></linearGradient></defs></svg>${(isJune22Active() ? REASON_MAP_0622[a.id] : REASON_MAP[a.id]) || a.zone || ''}</div>
             <div class="rec-card__actions detail__actions" style="display:none">
               <button type="button" class="rec-card__btn rec-card__btn--secondary btn btn--secondary" data-action="mark-done">已玩过</button>
               <button type="button" class="rec-card__btn rec-card__btn--primary btn btn--primary" data-action="navigate">查看详情</button>
@@ -488,7 +499,7 @@ export function mountPlannerPretrip() {
               ${tagHtml}
             </div>
             <div class="rec-card__wait detail__wait">${waitHtml}</div>
-            <div class="rec-card__dist planner-dock__card-dist"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.50417 0.300548C4.54237 0.197308 4.6884 0.197308 4.7266 0.300548C5.44724 2.24805 6.98272 3.78353 8.93022 4.50417C9.03346 4.54237 9.03346 4.6884 8.93022 4.7266C6.98272 5.44724 5.44724 6.98272 4.7266 8.93022C4.6884 9.03346 4.54237 9.03346 4.50417 8.93022C3.78353 6.98272 2.24805 5.44724 0.300548 4.7266C0.197308 4.6884 0.197308 4.54237 0.300548 4.50417C2.24805 3.78353 3.78353 2.24805 4.50417 0.300548Z" fill="url(#paint0_linear_498_1008)"/><path d="M9.63661 7.53492C9.65571 7.4833 9.72872 7.4833 9.74782 7.53492C10.1081 8.50867 10.8759 9.27641 11.8496 9.63673C11.9013 9.65583 11.9013 9.72884 11.8496 9.74794C10.8759 10.1083 10.1081 10.876 9.74782 11.8498C9.72872 11.9014 9.65571 11.9014 9.63661 11.8498C9.27629 10.876 8.50855 10.1083 7.5348 9.74794C7.48318 9.72884 7.48318 9.65583 7.5348 9.63673C8.50855 9.27641 9.27629 8.50867 9.63661 7.53492Z" fill="url(#paint1_linear_498_1008)"/><defs><linearGradient id="paint0_linear_498_1008" x1="0.373303" y1="1.19745" x2="9.14803" y2="7.28043" gradientUnits="userSpaceOnUse"><stop stop-color="#6666FF"/></linearGradient><linearGradient id="paint1_linear_498_1008" x1="7.57117" y1="7.98337" x2="11.9585" y2="11.0249" gradientUnits="userSpaceOnUse"><stop stop-color="#6666FF"/></linearGradient></defs></svg>${(isJune17Active() ? REASON_MAP_0617[a.id] : REASON_MAP[a.id]) || a.zone || ''}</div>
+            <div class="rec-card__dist planner-dock__card-dist"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.50417 0.300548C4.54237 0.197308 4.6884 0.197308 4.7266 0.300548C5.44724 2.24805 6.98272 3.78353 8.93022 4.50417C9.03346 4.54237 9.03346 4.6884 8.93022 4.7266C6.98272 5.44724 5.44724 6.98272 4.7266 8.93022C4.6884 9.03346 4.54237 9.03346 4.50417 8.93022C3.78353 6.98272 2.24805 5.44724 0.300548 4.7266C0.197308 4.6884 0.197308 4.54237 0.300548 4.50417C2.24805 3.78353 3.78353 2.24805 4.50417 0.300548Z" fill="url(#paint0_linear_498_1008)"/><path d="M9.63661 7.53492C9.65571 7.4833 9.72872 7.4833 9.74782 7.53492C10.1081 8.50867 10.8759 9.27641 11.8496 9.63673C11.9013 9.65583 11.9013 9.72884 11.8496 9.74794C10.8759 10.1083 10.1081 10.876 9.74782 11.8498C9.72872 11.9014 9.65571 11.9014 9.63661 11.8498C9.27629 10.876 8.50855 10.1083 7.5348 9.74794C7.48318 9.72884 7.48318 9.65583 7.5348 9.63673C8.50855 9.27641 9.27629 8.50867 9.63661 7.53492Z" fill="url(#paint1_linear_498_1008)"/><defs><linearGradient id="paint0_linear_498_1008" x1="0.373303" y1="1.19745" x2="9.14803" y2="7.28043" gradientUnits="userSpaceOnUse"><stop stop-color="#6666FF"/></linearGradient><linearGradient id="paint1_linear_498_1008" x1="7.57117" y1="7.98337" x2="11.9585" y2="11.0249" gradientUnits="userSpaceOnUse"><stop stop-color="#6666FF"/></linearGradient></defs></svg>${(isJune22Active() ? REASON_MAP_0622[a.id] : REASON_MAP[a.id]) || a.zone || ''}</div>
             <div class="rec-card__actions detail__actions" style="display:none">
               <button type="button" class="rec-card__btn rec-card__btn--secondary btn btn--secondary" data-action="mark-done">已玩过</button>
               <button type="button" class="rec-card__btn rec-card__btn--primary btn btn--primary" data-action="navigate">查看详情</button>
@@ -520,9 +531,9 @@ export function mountPlannerPretrip() {
   function rankRecommendations() {
     // 获取当前选中日期
     const activeTab = dock.querySelector(".planner-dock__date-tab.is-active");
-    const activeDate = activeTab ? activeTab.dataset.date : "2025-06-16";
-    const isJune17 = activeDate === "2025-06-17";
-    const order = isJune17 ? FIXED_ORDER_0617 : FIXED_ORDER;
+    const activeDate = activeTab ? activeTab.dataset.date : "2025-06-21";
+    const isJune22 = activeDate === "2025-06-22";
+    const order = isJune22 ? FIXED_ORDER_0622 : FIXED_ORDER;
 
     const idMap = new Map(allAttractions.map(a => [a.id, a]));
     const result = [];
@@ -679,7 +690,8 @@ export function mountPlannerPretrip() {
   // --- 加载预测数据 ---
   function loadPredictedData() {
     currentSlot = getCurrentTimeSlot();
-    const predicted = getCurrentPredictedWaits();
+    const dateKey = getActiveDateKey();
+    const predicted = getCurrentPredictedWaits(dateKey);
     waitMap = predicted;
     attractions = rankRecommendations();
 
