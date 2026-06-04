@@ -323,6 +323,7 @@ export class SceneManager {
   }
 
   focusOnAttraction(id) {
+    console.log('[LINKAGE] focusOnAttraction called with id:', id);
     // 标签相关常量（与 waitLabels.js 保持一致）
     const LABEL_ABOVE_MODEL = 3;
     const LABEL_Y_OFFSET_DEFAULT = 5;
@@ -330,8 +331,11 @@ export class SceneManager {
     const LABEL_CARD_BUFFER = 3; // DOM 卡片在锚点上方的额外高度缓冲
 
     // 找到对应的模型根节点（可能是 Mesh 或 TransformNode）
-    for (const node of this._allGltfRoots()) {
+    const roots = this._allGltfRoots();
+    console.log('[LINKAGE] searching', roots.length, 'glTF roots for id:', id);
+    for (const node of roots) {
       if (node.metadata?.pickableAttractionId === id) {
+        console.log('[LINKAGE] found model match for:', id);
         const bounds = node.getHierarchyBoundingVectors();
         const center = bounds.min.add(bounds.max).scale(0.5);
         const modelTopY = bounds.max.y;
@@ -354,10 +358,12 @@ export class SceneManager {
       }
     }
     // fallback: 从 marker 中找
+    console.log('[LINKAGE] no model found, trying AttractionMarkers fallback for:', id);
     const markersRoot = this._scene.getTransformNodeByName("AttractionMarkers");
     if (markersRoot) {
       for (const mesh of markersRoot.getChildMeshes()) {
         if (mesh.metadata?.attractionId === id) {
+          console.log('[LINKAGE] found marker match for:', id);
           const pos = mesh.position;
           const labelTopY = pos.y + LABEL_Y_OFFSET_DEFAULT + LABEL_CARD_BUFFER;
           this._cameraRig.focusOnAttractionWithLabel(
@@ -368,6 +374,7 @@ export class SceneManager {
         }
       }
     }
+    console.warn('[LINKAGE] focusOnAttraction: NO match found for id:', id, '- available pickableAttractionIds:', roots.map(n => n.metadata?.pickableAttractionId).filter(Boolean));
   }
 
   focusOnPoint(x, y, z, radius) {

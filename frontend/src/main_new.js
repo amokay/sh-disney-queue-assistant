@@ -524,35 +524,60 @@ async function main() {
 
   // ─── 卡片点击 → 3D 相机聚焦（plannerApp 卡片 → 3D 场景联动） ───
   window.addEventListener("attraction-clicked", (e) => {
-    if (_from3dScene) return; // 来自 3D 场景的点击已自行处理相机，跳过
+    console.log('[LINKAGE] attraction-clicked event received in main_new, _from3dScene:', _from3dScene, 'detail:', JSON.stringify(e.detail?.id || e.detail?.attraction?.id));
+    if (_from3dScene) {
+      console.log('[LINKAGE] skipping (from 3D scene)');
+      return;
+    }
     const id = e.detail?.id || e.detail?.attraction?.id;
-    if (!id) return;
+    if (!id) {
+      console.warn('[LINKAGE] No id in event detail, skipping. detail:', e.detail);
+      return;
+    }
 
-    console.log('[LINKAGE] card→3D focus, id:', id);
+    console.log('[LINKAGE] card→3D focus, id:', id, 'scene3dReady:', scene3dReady);
 
-    _justClickedAttraction = true;
-    if (SHOW_WAIT_LABELS_3D) scene3d.focusLabel(id);
+    try {
+      _justClickedAttraction = true;
 
-    // 特殊景点使用固定视角
-    if (id === "mine") {
-      scene3d.flyToView(
-        { x: -5.5, y: 16.0, z: -32.9 },
-        { x: -18.9, y: 0.0, z: -57.2 }
-      );
-    } else if (id === "castle") {
-      scene3d.flyToView(
-        { x: 9.7, y: 24.8, z: -44.1 },
-        { x: -23.0, y: 7.4, z: -42.4 }
-      );
-    } else if (id === "pirates") {
-      scene3d.flyToView(
-        { x: 14.8, y: 21.6, z: -39.0 },
-        { x: -2.1, y: 5.2, z: -62.4 }
-      );
-    } else {
-      scene3d.focusOnAttraction(id);
+      // focusLabel 独立 try-catch，避免标签错误阻断相机聚焦
+      if (SHOW_WAIT_LABELS_3D) {
+        try {
+          scene3d.focusLabel(id);
+        } catch (labelErr) {
+          console.warn('[LINKAGE] focusLabel error (non-fatal):', labelErr.message);
+        }
+      }
+
+      // 特殊景点使用固定视角
+      if (id === "mine") {
+        console.log('[LINKAGE] flyToView: mine');
+        scene3d.flyToView(
+          { x: -5.5, y: 16.0, z: -32.9 },
+          { x: -18.9, y: 0.0, z: -57.2 }
+        );
+      } else if (id === "castle") {
+        console.log('[LINKAGE] flyToView: castle');
+        scene3d.flyToView(
+          { x: 9.7, y: 24.8, z: -44.1 },
+          { x: -23.0, y: 7.4, z: -42.4 }
+        );
+      } else if (id === "pirates") {
+        console.log('[LINKAGE] flyToView: pirates');
+        scene3d.flyToView(
+          { x: 14.8, y: 21.6, z: -39.0 },
+          { x: -2.1, y: 5.2, z: -62.4 }
+        );
+      } else {
+        console.log('[LINKAGE] calling focusOnAttraction:', id);
+        scene3d.focusOnAttraction(id);
+      }
+      console.log('[LINKAGE] card→3D focus completed successfully for:', id);
+    } catch (err) {
+      console.error('[LINKAGE] Error in attraction-clicked handler:', err);
     }
   });
+  console.log('[LINKAGE] attraction-clicked listener registered in main_new.js');
 
   canvas.addEventListener("pointerup", (e) => {
     setTimeout(() => {

@@ -145,12 +145,13 @@ export function mountPlannerApp() {
     );
   }
   let activeCardId = null; // 当前选中卡片的 id，renderCards 后恢复 is-active
-  let navActiveForCard = true; // 当前选中卡片的导航是否激活（true=导航中，false=暂停）
+  let navActiveForCard = false; // 当前选中卡片的导航是否激活（true=导航中，false=暂停）
   let _pendingNavCardId = null; // 展开态下点击"开始导航"后记录的目标卡片 id，收起后自动选中并滚动
   // 手动加入推荐的项目 id 集合（不持久化，刷新页面重置）
   // 仅这部分卡片显示紫色背景与右上角删除按钮，系统自动推荐的初始 3 张维持默认样式。
   const manualRecommendIds = new Set();
   let lastOpportunityIds = new Set(); // 上一次的机会推荐ID
+  const explicitLowWaitIds = new Set(); // 由 simulate-low-wait 显式触发的低排队项目ID
   let appReady = false; // 启动保护期：true 后才允许弹 opportunity toast
 
   // --- 折叠控制（两档：collapsed / full）---
@@ -337,8 +338,10 @@ export function mountPlannerApp() {
         const isManual = manualRecommendIds.has(String(a.id));
         const manualCls = isManual ? ' is-manual-recommend' : '';
         const removeBtnHtml = isManual ? '<span class="detail__card-remove" data-action="remove-card"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 5.10771L11.7321 0.375663C12.2572 -0.131497 13.0918 -0.124244 13.608 0.391965C14.1242 0.908173 14.1315 1.74285 13.6243 2.26795L8.89229 7L13.6243 11.7321C14.1315 12.2572 14.1242 13.0918 13.608 13.608C13.0918 14.1242 12.2572 14.1315 11.7321 13.6243L7 8.89229L2.26795 13.6243C1.74285 14.1315 0.908173 14.1242 0.391965 13.608C-0.124244 13.0918 -0.131497 12.2572 0.375663 11.7321L5.10771 7L0.375663 2.26795C-0.131497 1.74285 -0.124244 0.908173 0.391965 0.391965C0.908173 -0.124244 1.74285 -0.131497 2.26795 0.375663L7 5.10771Z" fill="currentColor"/></svg></span>' : '';
+        const isActiveCard = String(a.id) === String(activeCardId);
+        const activeCls = isActiveCard ? ' is-active' : '';
         return `
-          <div class="detail__card rec-card${manualCls}" data-id="${a.id}">
+          <div class="detail__card rec-card${manualCls}${activeCls}" data-id="${a.id}">
             ${removeBtnHtml}
             <div class="rec-card__head">
               <span class="rec-card__name">${a.name || ''}</span>
@@ -348,7 +351,7 @@ export function mountPlannerApp() {
             <div class="rec-card__dist planner-dock__card-dist">${distLabel}</div>
             <div class="rec-card__actions detail__actions">
               <button type="button" class="rec-card__btn rec-card__btn--secondary btn btn--secondary" data-action="mark-done">已玩过</button>
-              <button type="button" class="rec-card__btn rec-card__btn--primary btn btn--primary" data-action="navigate">开始导航</button>
+              <button type="button" class="rec-card__btn rec-card__btn--primary btn btn--primary${isActiveCard && navActiveForCard ? ' is-navigating' : ''}" data-action="navigate">${isActiveCard && navActiveForCard ? '导航中...' : '开始导航'}</button>
             </div>
           </div>`;
       })
@@ -379,6 +382,11 @@ export function mountPlannerApp() {
     // 卡片入场动效：逐个延迟添加 is-loading-in
     const allCards = container.querySelectorAll(".detail__card");
     allCards.forEach((card, i) => {
+      // 跳过当前活跃/导航中的卡片，避免入场动画覆盖其状态
+      if (card.classList.contains("is-active")) {
+        card.classList.add("is-loaded");
+        return;
+      }
       card.classList.add("is-loading-in");
       card.style.animationDelay = `${i * 80}ms`;
       card.addEventListener("animationend", () => {
@@ -594,42 +602,66 @@ export function mountPlannerApp() {
       return true;
     });
 
-    // 机会推荐：必玩项目排队极短(≤15分钟)，即使已玩过也可再次推荐
-    const opportunityThreshold = 15;
-    const opportunityItems = allAttractions.filter(a => {
-      const name = a.name || '';
-      const isMustPlay = mustPlayList.some(m => name.includes(m) || m.includes(name));
-      if (!isMustPlay) return false;
-      const w = waitMap[a.id];
-      if (!w || w.status === 'closed') return false;
-      if (w.waitMinutes == null || w.waitMinutes > opportunityThreshold) return false;
-      if (manualIdSet.has(String(a.id))) return false;
-      // 避免与常规候选重复
-      if (candidates.some(c => String(c.id) === String(a.id))) return false;
-      return true;
+    // 2b. 从候选池中分离由 simulate-low-wait 显式触发的机会项目
+    const opportunityFromCandidates = [];
+    const regularCandidates = [];
+    candidates.forEach(a => {
+      if (explicitLowWaitIds.has(String(a.id))) {
+        opportunityFromCandidates.push(a);
+      } else {
+        regularCandidates.push(a);
+      }
     });
 
-    // 3. 常规候选评分排序（未玩过的项目优先）
-    const scored = candidates.map((a) => ({ attraction: a, score: calcScore(a) }));
+    // 2c. 已玩过但被显式触发的低排队项目也可再次推荐
+    const opportunityFromPlayed = allAttractions.filter(a => {
+      if (!playedCounts.has(a.id)) return false;
+      if (manualIdSet.has(String(a.id))) return false;
+      return explicitLowWaitIds.has(String(a.id));
+    });
+
+    // 合并所有机会推荐项（不受 autoSlots 限制）
+    const allOpportunityItems = [...opportunityFromCandidates, ...opportunityFromPlayed];
+    let opportunityFill = [];
+    if (allOpportunityItems.length > 0) {
+      const oppScored = allOpportunityItems.map(a => ({ attraction: a, score: calcScore(a) }));
+      oppScored.sort((a, b) => b.score - a.score);
+      opportunityFill = oppScored.map(s => s.attraction);
+    }
+
+    // 3. 常规候选评分排序（排除已归为机会推荐的项目）
+    const scored = regularCandidates.map((a) => ({ attraction: a, score: calcScore(a) }));
     scored.sort((a, b) => b.score - a.score);
 
     // 4. 取 top N（手动推荐不占用自动名额，保持3个自动推荐）
     const autoSlots = 3;
     const regularItems = scored.slice(0, autoSlots).map((s) => s.attraction);
 
-    // 5. 机会推荐项（已玩但低排队的必玩项目）：填充剩余名额，排在后面
-    const remainingSlots = autoSlots - regularItems.length;
-    let opportunityFill = [];
-    if (remainingSlots > 0 && opportunityItems.length > 0) {
-      const oppScored = opportunityItems.map((a) => ({ attraction: a, score: calcScore(a) }));
-      oppScored.sort((a, b) => b.score - a.score);
-      opportunityFill = oppScored.slice(0, remainingSlots).map((s) => s.attraction);
+    // 5. 合并：手动推荐 + 常规自动推荐
+    let result = [...manualItems, ...regularItems];
+
+    // 6. 低排队机会推荐强制插入（不受3个限制）
+    // 规则：如果有选中/导航中的卡片，强制将其置于第一位，低排队插入其后
+    //       如果没有选中卡片，低排队直接插入第一位
+    if (opportunityFill.length > 0) {
+      const navIdx = activeCardId
+        ? result.findIndex(a => String(a.id) === String(activeCardId))
+        : -1;
+      if (navIdx >= 0) {
+        // 先将导航卡片强制移到 index 0（无论它之前在哪个位置）
+        if (navIdx > 0) {
+          const [navCard] = result.splice(navIdx, 1);
+          result.unshift(navCard);
+        }
+        // 导航卡片现在在 index 0，低排队插入到 index 1
+        result.splice(1, 0, ...opportunityFill);
+      } else {
+        // 无选中卡片：低排队直接插入第一位
+        result.splice(0, 0, ...opportunityFill);
+      }
     }
 
-    // 6. 合并：手动推荐 + 常规自动推荐 + 机会推荐（在后面）
-    let result = [...manualItems, ...regularItems, ...opportunityFill];
-
-    // 7. 保底：至少 1 个未关闭项目
+    // 8. 保底：至少 1 个未关闭项目
     if (result.length === 0) {
       const fallback = allAttractions
         .filter((a) => waitMap[a.id]?.status !== 'closed')
@@ -1064,9 +1096,14 @@ export function mountPlannerApp() {
   // 复用 selectCard 以保证视觉效果（is-active 高亮、紫色边框等）与
   // 面板内直接点击卡片完全一致；selectCard 自身已包含 scrollIntoView。
   window.addEventListener("attraction-clicked", (e) => {
-    const id = e.detail?.id || e.detail?.attraction?.id;
-    if (!id) return;
-    selectCard(id);
+    try {
+      const id = e.detail?.id || e.detail?.attraction?.id;
+      if (!id) return;
+      console.log('[LINKAGE] plannerApp received attraction-clicked, selecting card:', id);
+      selectCard(id);
+    } catch (err) {
+      console.error('[LINKAGE] plannerApp attraction-clicked listener error:', err);
+    }
   });
 
   // --- 监听 LBS 位置更新 ---
@@ -1178,13 +1215,19 @@ export function mountPlannerApp() {
   });
 
 
-  // --- 测试按钮：模拟低排队 ---
-  window.addEventListener('simulate-low-wait', () => {
+  // --- 测试按钮：模拟低排队（仅必玩+热门项目，每分钟自动推送一个） ---
+  function isInMustOrPopularPool(a) {
+    const candidates = [a.name, a.name_cn].filter(Boolean);
+    const combined = [...mustPlayList, ...popularList];
+    return combined.some(m => candidates.some(c => c.includes(m) || m.includes(c)));
+  }
+
+  function fireSimulateLowWait() {
     if (allAttractions.length === 0) return;
 
-    // 从必玩项目中随机选一个当前排队时间 > 5 分钟的
-    const mustPlayItems = allAttractions.filter(a => a.mustPlay || a.is_must_play);
-    const pool = (mustPlayItems.length > 0 ? mustPlayItems : allAttractions).filter(a => {
+    // 仅从必玩+热门项目中选取当前排队>5分钟的
+    const pool = allAttractions.filter(a => {
+      if (!isInMustOrPopularPool(a)) return false;
       const w = waitMap[a.id];
       return !w || w.waitMinutes > 5;
     });
@@ -1192,11 +1235,37 @@ export function mountPlannerApp() {
 
     const target = pool[Math.floor(Math.random() * pool.length)];
     waitMap[target.id] = { waitMinutes: 5, status: 'open' };
+    explicitLowWaitIds.add(String(target.id));
+
+    // 保护当前选中/导航中的卡片：将其加入手动推荐以确保不被挤出推荐列表
+    if (activeCardId) {
+      manualRecommendIds.add(String(activeCardId));
+    }
 
     // 重新排序并渲染
     attractions = rankRecommendations();
     renderCards();
     renderOtherCards();
+
+    // 兜底恢复选中/导航中卡片的视觉状态（防止 DOM 重建后丢失）
+    if (activeCardId) {
+      const activeCard = dock.querySelector(`.detail__card[data-id="${activeCardId}"]`);
+      if (activeCard) {
+        activeCard.classList.add("is-active");
+        activeCard.classList.remove("is-loading-in");
+        activeCard.style.animationDelay = "";
+        const navBtn = activeCard.querySelector("[data-action=navigate]");
+        if (navBtn) {
+          if (navActiveForCard) {
+            navBtn.classList.add("is-navigating");
+            navBtn.textContent = "导航中...";
+          } else {
+            navBtn.classList.remove("is-navigating");
+            navBtn.textContent = "开始导航";
+          }
+        }
+      }
+    }
 
     // 通知排队标签刷新
     window.dispatchEvent(new CustomEvent('waittimes-updated', { detail: { waitMap } }));
@@ -1204,7 +1273,19 @@ export function mountPlannerApp() {
     // 触发 push 提醒
     showOpportunityToast(target.name, 5);
 
-    console.log('[simulate-low-wait]', target.name, '排队时间已设为5分钟');
+    console.log('[simulate-low-wait]', target.name, '排队时间已设为5分钟（必玩/热门）');
+  }
+
+  // 手动触发
+  window.addEventListener('simulate-low-wait', () => fireSimulateLowWait());
+
+  // 每60秒自动推送一个低排队（mock）
+  let _lowWaitAutoTimer = null;
+  window.addEventListener('simulate-low-wait-auto', () => {
+    if (_lowWaitAutoTimer) { clearInterval(_lowWaitAutoTimer); _lowWaitAutoTimer = null; console.log('[simulate-low-wait] 自动推送已停止'); return; }
+    _lowWaitAutoTimer = setInterval(() => fireSimulateLowWait(), 60000);
+    fireSimulateLowWait(); // 立即触发第一个
+    console.log('[simulate-low-wait] 自动推送已启动，每60秒推送一个必玩/热门低排队项目');
   });
 
   // --- 局部刷新排队时间标签 ---

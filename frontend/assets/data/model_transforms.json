@@ -68,21 +68,6 @@
       "scale": 0.49
     },
     {
-      "_名称": "创极速光轮",
-      "match": "landmarks/04_tron-lightcycle",
-      "position": [
-        -50.63,
-        0.5,
-        -25
-      ],
-      "rotationDeg": [
-        0,
-        -90,
-        0
-      ],
-      "scale": 0.18
-    },
-    {
       "match": "landmarks/05_fantasia-carousel",
       "position": [
         -8.743939729218862,
@@ -96,51 +81,6 @@
       ],
       "scale": 0.26,
       "_名称": "幻想曲旋转木马"
-    },
-    {
-      "_名称": "船奇戏水滩",
-      "match": "landmarks/06_shipwreck-shore",
-      "position": [
-        -2.9,
-        0.5,
-        -55.7
-      ],
-      "rotationDeg": [
-        0,
-        25,
-        0
-      ],
-      "scale": 0.17
-    },
-    {
-      "_名称": "爱丽丝梦游仙境迷宫",
-      "match": "landmarks/07_alice-maze",
-      "position": [
-        -23.5,
-        0.5,
-        -53.2
-      ],
-      "rotationDeg": [
-        0,
-        50,
-        0
-      ],
-      "scale": 0.3
-    },
-    {
-      "_名称": "探险家独木舟",
-      "match": "landmarks/08_canoe",
-      "position": [
-        0,
-        0.5,
-        -45
-      ],
-      "rotationDeg": [
-        0,
-        0,
-        0
-      ],
-      "scale": 0.25
     },
     {
       "match": "pool",
