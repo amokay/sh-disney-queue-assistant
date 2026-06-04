@@ -44,6 +44,64 @@ import {
 } from "./geoLocation.js";
 import { API_BASE } from "./api/base.js";
 
+// ─── 加载进度圆环 ───
+let _fakeProgress = 0;
+let _progressInterval = null;
+let _loadingFinished = false;
+
+function updateLoadingProgress(percent) {
+  const fill = document.querySelector('.progress-ring__fill');
+  const text = document.querySelector('.progress-text');
+  if (!fill || !text) return;
+  const circumference = 2 * Math.PI * 36; // ≈ 226.2
+  const clamped = Math.max(0, Math.min(100, percent));
+  const offset = circumference * (1 - clamped / 100);
+  fill.style.strokeDashoffset = String(offset);
+  text.textContent = Math.round(clamped) + '%';
+}
+
+function startFakeLoadingProgress() {
+  if (_progressInterval) return;
+  _fakeProgress = 0;
+  updateLoadingProgress(0);
+  _progressInterval = setInterval(() => {
+    if (_loadingFinished) return;
+    if (_fakeProgress < 80) {
+      _fakeProgress += Math.random() * 3 + 1;
+      _fakeProgress = Math.min(_fakeProgress, 80);
+      updateLoadingProgress(_fakeProgress);
+    }
+  }, 200);
+}
+
+function finishLoadingProgress() {
+  if (_loadingFinished) return;
+  _loadingFinished = true;
+  if (_progressInterval) {
+    clearInterval(_progressInterval);
+    _progressInterval = null;
+  }
+  let current = _fakeProgress;
+  const finishInterval = setInterval(() => {
+    current += 5;
+    if (current >= 100) {
+      current = 100;
+      clearInterval(finishInterval);
+      updateLoadingProgress(100);
+      // 短暂停留后淡出
+      setTimeout(() => {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+          overlay.classList.add('hidden');
+          setTimeout(() => overlay.remove(), 500);
+        }
+      }, 300);
+      return;
+    }
+    updateLoadingProgress(current);
+  }, 30);
+}
+
 // ─── 数据合并工具 ───
 function mergeAttractions(rawAttractions, waits) {
   const wmap = new Map((waits || []).map((w) => [w.id, w]));
@@ -109,6 +167,7 @@ async function loadTreePositions() {
 // 主入口
 // ═══════════════════════════════════════════════════════════════════
 async function main() {
+  startFakeLoadingProgress();
   showLoading();
   const canvas = document.getElementById("c");
   const uiRoot = document.getElementById("ui-root");
@@ -663,12 +722,8 @@ async function main() {
   // ─── 完成 ───
   hideLoading();
 
-  // 隐藏圆环加载动效 overlay（带淡出过渡）
-  const loadingOverlay = document.getElementById('loading-overlay');
-  if (loadingOverlay) {
-    loadingOverlay.classList.add('hidden');
-    setTimeout(() => loadingOverlay.remove(), 500);
-  }
+  // 进度圆环填满到 100% 后触发淡出
+  finishLoadingProgress();
 }
 
 // ─── 辅助：右上角按钮 ───
@@ -733,4 +788,5 @@ function setupLbsButton() {
 main().catch((e) => {
   console.error(e);
   hideLoading();
+  finishLoadingProgress();
 });
