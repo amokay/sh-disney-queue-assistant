@@ -27,6 +27,61 @@ import { showLoading, hideLoading } from "./ui/loading.js";
 import { mountPlannerPretrip } from "./plannerPretrip.js";
 import { ATTRACTIONS_MOCK, getCurrentPredictedWaits } from "./mockPredictions.js";
 
+// ─── 加载进度圆环 ───
+let _fakeProgress = 0;
+let _progressInterval = null;
+let _loadingFinished = false;
+
+function updateLoadingProgress(percent) {
+  const fill = document.getElementById('progress-ring-fill') || document.querySelector('.progress-ring__fill');
+  if (!fill) return;
+  const circumference = 2 * Math.PI * 36; // ≈ 226.2
+  const clamped = Math.max(0, Math.min(100, percent));
+  const offset = circumference * (1 - clamped / 100);
+  fill.style.strokeDashoffset = String(offset);
+}
+
+function startFakeLoadingProgress() {
+  if (_progressInterval) return;
+  _fakeProgress = 0;
+  updateLoadingProgress(0);
+  _progressInterval = setInterval(() => {
+    if (_loadingFinished) return;
+    if (_fakeProgress < 80) {
+      _fakeProgress += Math.random() * 3 + 1;
+      _fakeProgress = Math.min(_fakeProgress, 80);
+      updateLoadingProgress(_fakeProgress);
+    }
+  }, 200);
+}
+
+function finishLoadingProgress() {
+  if (_loadingFinished) return;
+  _loadingFinished = true;
+  if (_progressInterval) {
+    clearInterval(_progressInterval);
+    _progressInterval = null;
+  }
+  let current = _fakeProgress;
+  const finishInterval = setInterval(() => {
+    current += 5;
+    if (current >= 100) {
+      current = 100;
+      clearInterval(finishInterval);
+      updateLoadingProgress(100);
+      setTimeout(() => {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+          overlay.classList.add('hidden');
+          setTimeout(() => overlay.remove(), 500);
+        }
+      }, 300);
+      return;
+    }
+    updateLoadingProgress(current);
+  }, 30);
+}
+
 // ─── 数据合并工具（行前版：使用 mock 数据） ───
 function mergeAttractionsPretrip(mockAttractions, predictedWaits) {
   return (mockAttractions || []).map((a) => {
@@ -75,6 +130,7 @@ async function loadTreePositions() {
 // 主入口
 // ═══════════════════════════════════════════════════════════════════
 async function main() {
+  startFakeLoadingProgress();
   showLoading();
 
   // ─── 行前模式：隐藏3D标签中的"开始导航"按钮 ───
@@ -320,6 +376,7 @@ async function main() {
 
   // ─── 完成 ───
   hideLoading();
+  finishLoadingProgress();
 }
 
 // ─── 辅助：右上角地图模式按钮 ───
@@ -347,4 +404,5 @@ function setupMapModeButton(scene3d) {
 main().catch((e) => {
   console.error(e);
   hideLoading();
+  finishLoadingProgress();
 });
