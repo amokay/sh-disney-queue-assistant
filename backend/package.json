@@ -16,7 +16,7 @@
     "sync-amap-seed": "node ./scripts/sync-amap-attractions.mjs seed"
   },
   "dependencies": {
-    "better-sqlite3": "^11.7.0",
+    "better-sqlite3": "^11.10.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "node-cron": "^3.0.3",

@@ -5,14 +5,24 @@ async function safeJson(res) {
   return await res.json();
 }
 
+/** 静态数据兜底：当后端 API 不可用时（如 .io 静态部署），加载本地 JSON */
+async function fallbackJson(path) {
+  try {
+    const res = await fetch(path);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch { return []; }
+}
+
 export async function fetchAttractions() {
   try {
     const res = await fetch(`${API_BASE}/api/attractions`);
     const data = await safeJson(res);
     return Array.isArray(data) ? data : [];
   } catch (e) {
-    console.error("fetchAttractions failed:", e);
-    return [];
+    console.warn("fetchAttractions API failed, trying static fallback:", e.message);
+    return fallbackJson("./assets/data/attractions_static.json");
   }
 }
 
@@ -22,8 +32,8 @@ export async function fetchWaitTimes() {
     const data = await safeJson(res);
     return Array.isArray(data) ? data : [];
   } catch (e) {
-    console.error("fetchWaitTimes failed:", e);
-    return [];
+    console.warn("fetchWaitTimes API failed, trying static fallback:", e.message);
+    return fallbackJson("./assets/data/waittimes_static.json");
   }
 }
 
