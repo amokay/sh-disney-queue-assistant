@@ -232,7 +232,7 @@ export async function findWalkRoute(startX, startZ, endX, endZ) {
   const startNode = findNearestNode(startX, startZ);
   const endNode = findNearestNode(endX, endZ);
   if (startNode.idx < 0 || endNode.idx < 0) return null;
-  if (startNode.dist > 30 || endNode.dist > 30) return null;
+  // 客户端不设距离阈值：远离路网的景点仍通过最近节点连接路由
 
   const result = dijkstra(startNode.idx, endNode.idx);
   if (!result) return null;
