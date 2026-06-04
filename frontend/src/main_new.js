@@ -662,6 +662,13 @@ async function main() {
 
   // ─── 完成 ───
   hideLoading();
+
+  // 隐藏圆环加载动效 overlay（带淡出过渡）
+  const loadingOverlay = document.getElementById('loading-overlay');
+  if (loadingOverlay) {
+    loadingOverlay.classList.add('hidden');
+    setTimeout(() => loadingOverlay.remove(), 500);
+  }
 }
 
 // ─── 辅助：右上角按钮 ───
