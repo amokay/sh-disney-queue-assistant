@@ -40,9 +40,9 @@
     {
       "match": "landmarks/02_seven-dwarfs-mine-train",
       "position": [
-        -18.9,
+        -22.71905595175705,
         1,
-        -57.2
+        -59.42928541249386
       ],
       "rotationDeg": [
         0,
@@ -85,9 +85,9 @@
     {
       "match": "landmarks/05_fantasia-carousel",
       "position": [
-        -8.9,
+        -8.743939729218862,
         0.5,
-        -33.4
+        -32.8489633299035
       ],
       "rotationDeg": [
         0,

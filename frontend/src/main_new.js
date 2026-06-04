@@ -695,7 +695,7 @@ function setupLbsButton() {
     "position:fixed",
     "bottom:223px",
     "right:12px",
-    "z-index:26000",
+    "z-index:10",
     "display:inline-flex",
     "align-items:center",
     "justify-content:center",

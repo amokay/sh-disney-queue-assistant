@@ -290,7 +290,8 @@ export function mountPlannerApp() {
     }
     const minHeight = Number(a?.min_height_cm) || 0;
     const heightPart = minHeight > 0 ? `身高要求${minHeight}cm` : '无身高要求';
-    return `${heightPart}<svg class="wait-divider" width="1" height="14" viewBox="0 0 1 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="16" fill="#D9D9D9"/></svg><span class="wait-queue-color ${colorCls}${isClosed ? ' is-closed' : ''}">${queuePart}</span>`;
+    const effectiveCls = isParkClosed() ? 'wait-color--closed' : (isClosed ? ' is-closed' : '');
+    return `${heightPart}<svg class="wait-divider" width="1" height="14" viewBox="0 0 1 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="16" fill="#D9D9D9"/></svg><span class="wait-queue-color ${isParkClosed() ? 'wait-color--closed' : colorCls}${effectiveCls}">${queuePart}</span>`;
   }
 
   // --- 渲染卡片 ---

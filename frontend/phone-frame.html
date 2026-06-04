@@ -242,6 +242,48 @@
       border-radius: 3px 0 0 3px;
     }
 
+    /* 右下角模式切换 Tab（下划线风格） */
+    .mode-tabs {
+      position: absolute;
+      bottom: 60px;
+      right: 40px;
+      display: flex;
+      gap: 0;
+    }
+
+    .mode-tabs-slider {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      border-radius: 1px;
+      background: #1c1c1e;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .mode-tab {
+      position: relative;
+      padding: 6px 16px;
+      border: none;
+      border-radius: 0;
+      font-size: 13px;
+      font-weight: 400;
+      cursor: pointer;
+      transition: color 0.25s ease, font-weight 0.25s ease;
+      background: transparent;
+      color: #999;
+      outline: none;
+    }
+
+    .mode-tab:hover {
+      color: #555;
+    }
+
+    .mode-tab.active {
+      color: #1c1c1e;
+      font-weight: 600;
+    }
+
     /* 响应式缩放 - iPhone */
     @media (max-height: 900px) {
       .phone-container:not(.phone-container--ipad) {
@@ -329,6 +371,13 @@
     </div>
   </div>
 
+  <!-- 右下角行中/行前切换 -->
+  <div class="mode-tabs">
+    <div class="mode-tabs-slider"></div>
+    <button class="mode-tab active" data-mode="inpark">行中</button>
+    <button class="mode-tab" data-mode="pretrip">行前</button>
+  </div>
+
   <p style="position:absolute;bottom:24px;font-size:12px;color:#999;">Fliggy Design</p>
 
   <script>
@@ -343,6 +392,33 @@
 
     // 初始化滑块位置
     moveSlider(document.querySelector('.device-tab.active'));
+
+    // 右下角模式切换
+    const modeTabs = document.querySelectorAll('.mode-tab');
+    const modeSlider = document.querySelector('.mode-tabs-slider');
+
+    function moveModeSlider(activeTab) {
+      modeSlider.style.width = activeTab.offsetWidth + 'px';
+      modeSlider.style.transform = 'translateX(' + activeTab.offsetLeft + 'px)';
+    }
+
+    moveModeSlider(document.querySelector('.mode-tab.active'));
+
+    modeTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        modeTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        moveModeSlider(tab);
+
+        const mode = tab.dataset.mode;
+        const iframe = document.querySelector('.phone-screen iframe');
+        if (mode === 'pretrip') {
+          iframe.src = 'http://localhost:3000/index_pretrip.html';
+        } else {
+          iframe.src = 'http://localhost:3000/index_babylon.html';
+        }
+      });
+    });
 
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
