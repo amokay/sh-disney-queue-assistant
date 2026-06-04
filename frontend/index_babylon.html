@@ -26,7 +26,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding-bottom: 35vh;
+        padding-bottom: calc(35vh - 10px);
         background: linear-gradient(to bottom, #7272DD, #494987);
         z-index: 9999;
         transition: opacity 0.5s ease;
@@ -35,38 +35,28 @@
         opacity: 0;
         pointer-events: none;
       }
-      .progress-container {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .progress-text {
-        position: absolute;
-        color: #fff;
-        font-size: 20px;
-        font-weight: 500;
-        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      .progress-ring {
+        animation: spin 1s linear infinite;
       }
       .progress-ring__fill {
         transition: stroke-dashoffset 0.3s ease;
       }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     </style>
   </head>
   <body>
-    <!-- 圆环加载动效（百分比进度） -->
+    <!-- 圆环加载动效 -->
     <div id="loading-overlay" class="loading-overlay">
-      <div class="progress-container">
-        <svg class="progress-ring" width="80" height="80" viewBox="0 0 80 80">
-          <circle class="progress-ring__bg" cx="40" cy="40" r="36"
-            fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="4"/>
-          <circle class="progress-ring__fill" cx="40" cy="40" r="36"
-            fill="none" stroke="#fff" stroke-width="4"
-            stroke-dasharray="226.2" stroke-dashoffset="226.2"
-            stroke-linecap="round" transform="rotate(-90 40 40)"/>
-        </svg>
-        <div class="progress-text">0%</div>
-      </div>
+      <svg class="progress-ring" width="40" height="40" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="36"
+          fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="8"/>
+        <circle class="progress-ring__fill" cx="40" cy="40" r="36"
+          fill="none" stroke="#fff" stroke-width="8"
+          stroke-dasharray="226.2" stroke-dashoffset="169.6"
+          stroke-linecap="round" transform="rotate(-90 40 40)"/>
+      </svg>
     </div>
     <div id="ui-root"></div>
     <canvas id="c" tabindex="0"></canvas>
