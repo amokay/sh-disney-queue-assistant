@@ -129,6 +129,11 @@ async function loadTreePositions() {
 // ═══════════════════════════════════════════════════════════════════
 // 主入口
 // ═══════════════════════════════════════════════════════════════════
+// 行前模式全局标志：供共享模块（如 waitLabels.js）识别并跳过闭园/暂停开放判断
+if (typeof window !== "undefined") {
+  window.__PRETRIP_MODE__ = true;
+}
+
 async function main() {
   startFakeLoadingProgress();
   showLoading();

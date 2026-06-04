@@ -127,13 +127,17 @@ export function createWaitLabelOverlay(scene, camera, engine, container) {
   }
 
   function isParkClosed() {
+    // 行前模式展示的是预估排队时间（未来某天），不应根据当前时间判断闭园
+    if (typeof window !== "undefined" && window.__PRETRIP_MODE__) return false;
     const h = new Date().getHours();
     return h >= 21 || h < 8;
   }
 
   function buildHtml(a) {
     const wm = a.waitMinutes;
-    const closed = a.status === "closed";
+    // 行前模式忽略 closed 状态，统一展示预估排队时间
+    const isPretrip = typeof window !== "undefined" && window.__PRETRIP_MODE__;
+    const closed = !isPretrip && a.status === "closed";
     let waitText;
     if (isParkClosed()) waitText = "已关闭";
     else if (closed) waitText = "暂停开放";
