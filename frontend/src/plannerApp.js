@@ -773,10 +773,17 @@ export function mountPlannerApp() {
   // 仅负责选中态与滚动定位，不自动开启导航。
   // 导航需由用户显式点击"开始导航"按钮触发。
   function selectCard(id) {
+    // 记录调用前的导航状态：若当前正在导航中，selectCard 不应清除导航态
+    const wasNavigating = navActiveForCard;
+    const prevNavCardId = activeCardId;
+
     // 始终记录选中意图，即使卡片 DOM 尚未创建（loadData 未完成时），
     // 后续 renderCards / renderOtherCards 会根据 activeCardId 恢复 is-active。
     activeCardId = id;
-    navActiveForCard = false; // 选中新卡片不自动开始导航，等用户点击按钮
+    // 仅在未导航时才重置 navActiveForCard；导航中时保留当前导航状态
+    if (!wasNavigating) {
+      navActiveForCard = false; // 选中新卡片不自动开始导航，等用户点击按钮
+    }
 
     const card = dock.querySelector(`.detail__card[data-id="${id}"]`);
     if (!card || card.classList.contains("is-active")) return;
@@ -789,14 +796,26 @@ export function mountPlannerApp() {
     dock.querySelectorAll(".detail__card.is-active").forEach(c => {
       c.classList.remove("is-active");
       const btn = c.querySelector("[data-action=navigate]");
-      if (btn) { btn.classList.remove("is-navigating"); btn.textContent = "开始导航"; }
+      if (btn) {
+        // 若该卡片是正在导航中的卡片，保留其"导航中..."按钮态，避免取消导航
+        const isNavigatingCard = wasNavigating && String(c.dataset.id) === String(prevNavCardId);
+        if (!isNavigatingCard) {
+          btn.classList.remove("is-navigating");
+          btn.textContent = "开始导航";
+        }
+      }
     });
     card.classList.add("is-active");
     card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
 
     // 不自动切换导航按钮为"导航中"，保持"开始导航"待用户主动触发
+    // 但若新选中的卡片本身就是正在导航中的卡片，则不要重置其按钮态
     const curBtn = card.querySelector("[data-action=navigate]");
-    if (curBtn) { curBtn.classList.remove("is-navigating"); curBtn.textContent = "开始导航"; }
+    const isNavigatingTarget = wasNavigating && String(id) === String(prevNavCardId);
+    if (curBtn && !isNavigatingTarget) {
+      curBtn.classList.remove("is-navigating");
+      curBtn.textContent = "开始导航";
+    }
   }
 
   // --- 横滑卡片：根据 scroll 位置同步轮播指示器 ---
@@ -1020,11 +1039,12 @@ export function mountPlannerApp() {
     const id = card.dataset.id;
     if (!id) return;
 
-    // 如果当前正在导航中，先取消导航状态通知3D场景，
-    // 避免 _isNavigating 残留导致 attraction-clicked 事件被忽略
-    if (navActiveForCard) {
-      window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id: activeCardId, active: false } }));
-    }
+    // 修复：点击其他卡片不应取消当前导航。
+    // 之前会在导航激活时派发 navigation-toggled { active: false } 取消导航，
+    // 现移除该逻辑，仅在用户主动点击"导航中..."按钮时才取消导航。
+    // if (navActiveForCard) {
+    //   window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id: activeCardId, active: false } }));
+    // }
 
     selectCard(id);
 
