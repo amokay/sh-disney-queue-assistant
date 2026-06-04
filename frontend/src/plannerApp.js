@@ -146,6 +146,7 @@ export function mountPlannerApp() {
   }
   let activeCardId = null; // 当前选中卡片的 id，renderCards 后恢复 is-active
   let navActiveForCard = false; // 当前选中卡片的导航是否激活（true=导航中，false=暂停）
+  let navigatingCardId = null; // 记录正在导航的卡片ID，与 navActiveForCard 配合使用
   let _pendingNavCardId = null; // 展开态下点击"开始导航"后记录的目标卡片 id，收起后自动选中并滚动
   // 手动加入推荐的项目 id 集合（不持久化，刷新页面重置）
   // 仅这部分卡片显示紫色背景与右上角删除按钮，系统自动推荐的初始 3 张维持默认样式。
@@ -351,7 +352,7 @@ export function mountPlannerApp() {
             <div class="rec-card__dist planner-dock__card-dist">${distLabel}</div>
             <div class="rec-card__actions detail__actions">
               <button type="button" class="rec-card__btn rec-card__btn--secondary btn btn--secondary" data-action="mark-done">已玩过</button>
-              <button type="button" class="rec-card__btn rec-card__btn--primary btn btn--primary${isActiveCard && navActiveForCard ? ' is-navigating' : ''}" data-action="navigate">${isActiveCard && navActiveForCard ? '导航中...' : '开始导航'}</button>
+              <button type="button" class="rec-card__btn rec-card__btn--primary btn btn--primary${String(a.id) === String(navigatingCardId) ? ' is-navigating' : ''}" data-action="navigate">${String(a.id) === String(navigatingCardId) ? '导航中...' : '开始导航'}</button>
             </div>
           </div>`;
       })
@@ -364,7 +365,7 @@ export function mountPlannerApp() {
         activeCard.classList.add("is-active");
         const btn = activeCard.querySelector("[data-action=navigate]");
         if (btn) {
-          if (navActiveForCard) {
+          if (String(activeCardId) === String(navigatingCardId)) {
             btn.classList.add("is-navigating");
             btn.textContent = "导航中...";
           } else {
@@ -489,7 +490,7 @@ export function mountPlannerApp() {
         activeCard.classList.add("is-active");
         const btn = activeCard.querySelector("[data-action=navigate]");
         if (btn) {
-          if (navActiveForCard) {
+          if (String(activeCardId) === String(navigatingCardId)) {
             btn.classList.add("is-navigating");
             btn.textContent = "导航中...";
           } else {
@@ -798,7 +799,7 @@ export function mountPlannerApp() {
       const btn = c.querySelector("[data-action=navigate]");
       if (btn) {
         // 若该卡片是正在导航中的卡片，保留其"导航中..."按钮态，避免取消导航
-        const isNavigatingCard = wasNavigating && String(c.dataset.id) === String(prevNavCardId);
+        const isNavigatingCard = navigatingCardId && String(c.dataset.id) === String(navigatingCardId);
         if (!isNavigatingCard) {
           btn.classList.remove("is-navigating");
           btn.textContent = "开始导航";
@@ -811,7 +812,7 @@ export function mountPlannerApp() {
     // 不自动切换导航按钮为"导航中"，保持"开始导航"待用户主动触发
     // 但若新选中的卡片本身就是正在导航中的卡片，则不要重置其按钮态
     const curBtn = card.querySelector("[data-action=navigate]");
-    const isNavigatingTarget = wasNavigating && String(id) === String(prevNavCardId);
+    const isNavigatingTarget = navigatingCardId && String(id) === String(navigatingCardId);
     if (curBtn && !isNavigatingTarget) {
       curBtn.classList.remove("is-navigating");
       curBtn.textContent = "开始导航";
@@ -864,6 +865,7 @@ export function mountPlannerApp() {
         navBtnNew.textContent = "导航中...";
       }
       navActiveForCard = true;
+      navigatingCardId = id;
       activeCardId = id;
       window.dispatchEvent(new CustomEvent("attraction-clicked", { detail: { id, attraction: item } }));
       window.dispatchEvent(new CustomEvent("quick-navigate", { detail: { id } }));
@@ -894,6 +896,7 @@ export function mountPlannerApp() {
           }
           activeCardId = null;
           navActiveForCard = false;
+          navigatingCardId = null;
           window.dispatchEvent(new CustomEvent("route-preview", { detail: {} }));
         }
         attractions = rankRecommendations();
@@ -915,6 +918,7 @@ export function mountPlannerApp() {
         navBtn.classList.remove("is-navigating");
         navBtn.textContent = "开始导航";
         navActiveForCard = false;
+        navigatingCardId = null;
         window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id, active: false } }));
       } else if (card.classList.contains("is-active")) {
         // 按钮处于"开始导航"状态（已选中卡片内），切换为启动导航：
@@ -923,6 +927,7 @@ export function mountPlannerApp() {
         navBtn.classList.add("is-navigating");
         navBtn.textContent = "导航中...";
         navActiveForCard = true;
+        navigatingCardId = id;
         window.dispatchEvent(new CustomEvent("quick-navigate", { detail: { id } }));
         window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id, active: true } }));
         // 记录待选中卡片，收起后由 setDockState 统一处理滚动
@@ -936,10 +941,12 @@ export function mountPlannerApp() {
         navBtn.classList.add("is-navigating");
         navBtn.textContent = "导航中...";
         navActiveForCard = true;
+        navigatingCardId = id;
         // 与地图点击保持一致的事件格式：同时携带 id 与 attraction
         const __navItem = allAttractions.find((a) => String(a.id) === String(id));
         window.dispatchEvent(new CustomEvent("attraction-clicked", { detail: { id, attraction: __navItem } }));
         window.dispatchEvent(new CustomEvent("quick-navigate", { detail: { id } }));
+        window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id, active: true } }));
         // 记录待选中卡片，收起后由 setDockState 统一处理滚动
         _pendingNavCardId = id;
         // 导航激活后将面板收起
@@ -991,6 +998,7 @@ export function mountPlannerApp() {
             }
             activeCardId = null;
             navActiveForCard = false;
+            navigatingCardId = null;
             window.dispatchEvent(new CustomEvent("route-preview", { detail: {} }));
           }
           // 已玩过后重新排序推荐
@@ -1012,6 +1020,7 @@ export function mountPlannerApp() {
               }
               activeCardId = null;
               navActiveForCard = false;
+              navigatingCardId = null;
             }
             // 重新智能排序（已玩项会被排除在候选池之外）
             attractions = rankRecommendations();
@@ -1109,6 +1118,7 @@ export function mountPlannerApp() {
     // 3. 设为导航中状态（selectCard 默认不开启导航，需手动覆盖）
     activeCardId = idStr;
     navActiveForCard = true;
+    navigatingCardId = idStr;
 
     const navBtn = dock.querySelector(`.detail__card[data-id="${idStr}"] [data-action=navigate]`);
     if (navBtn) {
@@ -1389,7 +1399,7 @@ export function mountPlannerApp() {
         }
         const navBtn = activeCard.querySelector("[data-action=navigate]");
         if (navBtn) {
-          if (navActiveForCard) {
+          if (String(activeCardId) === String(navigatingCardId)) {
             navBtn.classList.add("is-navigating");
             navBtn.textContent = "导航中...";
           } else {

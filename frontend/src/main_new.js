@@ -635,6 +635,9 @@ async function main() {
     const id = e.detail?.id;
     if (!id) return;
     window.dispatchEvent(new CustomEvent("quick-navigate", { detail: { id } }));
+    // ★ 必须同步派发 navigation-toggled，使 waitLabels 的 _currentNavigatingId 立即生效，
+    //   否则后续点击该景点 3D 模型时 focusOn→buildHtml 仍会显示"开始导航"按钮。
+    window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id, active: true } }));
   });
   
   // 标签点击 → 选中景点 + 相机聚焦（与点击3D模型相同）
