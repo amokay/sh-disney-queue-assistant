@@ -1000,6 +1000,7 @@ export function mountPlannerApp() {
     // 导航需由用户点击"开始导航"按钮显式触发。
     // 与地图点击（interaction.js）保持一致的 detail 格式：同时携带 id 与 attraction。
     const __cardItem = allAttractions.find((a) => String(a.id) === String(id));
+    console.log('[LINKAGE] card clicked, dispatching attraction-clicked, id:', id);
     window.dispatchEvent(
       new CustomEvent("attraction-clicked", { detail: { id, attraction: __cardItem } })
     );

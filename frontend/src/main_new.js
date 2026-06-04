@@ -461,6 +461,7 @@ async function main() {
   // ─── 事件绑定（3D → 框架） ───
   let _carouselActiveUntil = 0;
   let _justClickedAttraction = false; // 防止 pointerup 立即清除选中态
+  let _from3dScene = false; // 标记事件来源于3D场景点击，防止监听器重复聚焦
 
   scene3d.onAttractionClicked((id, hitPoint) => {
     const attraction = merged.find((x) => x.id === id);
@@ -501,20 +502,56 @@ async function main() {
       scene3d.focusOnAttraction(id);
     }
 
+    _from3dScene = true;
     window.dispatchEvent(
       new CustomEvent("attraction-clicked", { detail: { attraction, hitPoint } })
     );
+    _from3dScene = false;
   });
 
   scene3d.onMapPinClicked((pinId, label, attractionId) => {
     if (attractionId) {
       const a = merged.find((x) => x.id === attractionId);
       if (a) {
+        _from3dScene = true;
         window.dispatchEvent(new CustomEvent("attraction-clicked", { detail: { attraction: a } }));
+        _from3dScene = false;
         return;
       }
     }
     showToast(label, "info");
+  });
+
+  // ─── 卡片点击 → 3D 相机聚焦（plannerApp 卡片 → 3D 场景联动） ───
+  window.addEventListener("attraction-clicked", (e) => {
+    if (_from3dScene) return; // 来自 3D 场景的点击已自行处理相机，跳过
+    const id = e.detail?.id || e.detail?.attraction?.id;
+    if (!id) return;
+
+    console.log('[LINKAGE] card→3D focus, id:', id);
+
+    _justClickedAttraction = true;
+    if (SHOW_WAIT_LABELS_3D) scene3d.focusLabel(id);
+
+    // 特殊景点使用固定视角
+    if (id === "mine") {
+      scene3d.flyToView(
+        { x: -5.5, y: 16.0, z: -32.9 },
+        { x: -18.9, y: 0.0, z: -57.2 }
+      );
+    } else if (id === "castle") {
+      scene3d.flyToView(
+        { x: 9.7, y: 24.8, z: -44.1 },
+        { x: -23.0, y: 7.4, z: -42.4 }
+      );
+    } else if (id === "pirates") {
+      scene3d.flyToView(
+        { x: 14.8, y: 21.6, z: -39.0 },
+        { x: -2.1, y: 5.2, z: -62.4 }
+      );
+    } else {
+      scene3d.focusOnAttraction(id);
+    }
   });
 
   canvas.addEventListener("pointerup", (e) => {
