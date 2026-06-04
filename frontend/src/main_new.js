@@ -720,6 +720,21 @@ async function main() {
     }
   });
 
+  // 导航中重复点击同一张卡片 → 相机调整为展示整条导航路线的起点 + 终点包围盒
+  window.addEventListener("navigation-camera-overview", (e) => {
+    const id = e.detail?.id;
+    if (!id) return;
+    const loc = lastUserLocation;
+    if (!loc || loc.scene_x == null || loc.scene_z == null) return;
+    const target = merged.find((x) => x.id === id);
+    const endPos = target?.position;
+    if (!endPos) return;
+    scene3d.fitNavigationView(
+      { x: loc.scene_x, z: loc.scene_z },
+      { x: endPos.x, z: endPos.z }
+    );
+  });
+
   // ─── 用户位置（已在 try-catch 上方提前注册） ───
 
   window.addEventListener("focus-user-location", async () => {

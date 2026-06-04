@@ -1046,6 +1046,18 @@ export function mountPlannerApp() {
     //   window.dispatchEvent(new CustomEvent("navigation-toggled", { detail: { id: activeCardId, active: false } }));
     // }
 
+    // 修复：点击当前正在导航中的卡片时，保持导航态不变，
+    // 且不派发 attraction-clicked（避免相机切回单点 focusOnAttraction），
+    // 改为派发路线概览事件，让相机展示整条导航路线。
+    if (navActiveForCard && String(id) === String(activeCardId)) {
+      // 仅确保 DOM 选中态、按钮文案保留（理论上已是激活态，selectCard 会早返回）
+      selectCard(id);
+      window.dispatchEvent(
+        new CustomEvent("navigation-camera-overview", { detail: { id } })
+      );
+      return;
+    }
+
     selectCard(id);
 
     // 仅派发选中事件用于相机聚焦，不自动开启路线导航；

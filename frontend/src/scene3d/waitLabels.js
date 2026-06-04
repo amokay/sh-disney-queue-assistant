@@ -38,6 +38,7 @@ const MUST_PLAY_NAMES = new Set([
 
 let _userSceneX = null;
 let _userSceneZ = null;
+let _currentNavigatingId = null;
 
 window.addEventListener("user-location-updated", (e) => {
   const { scene_x, scene_z } = e.detail || {};
@@ -73,6 +74,19 @@ export function createWaitLabelOverlay(scene, camera, engine, container) {
     });
   }
   ensureDelegate();
+
+  // 监听导航状态切换，正在导航的项目其排队标签不展示"开始导航"按钮
+  window.addEventListener("navigation-toggled", (e) => {
+    const { id, active } = e.detail || {};
+    _currentNavigatingId = active ? id : null;
+    // 刷新该标签的HTML以隐藏/显示按钮
+    if (id && labels.has(id)) {
+      const entry = labels.get(id);
+      if (entry && entry.el) {
+        entry.el.innerHTML = buildHtml(entry.attraction);
+      }
+    }
+  });
 
   // 共享 leader 材质
   const _leaderMat = new BABYLON.StandardMaterial("leaderLineMat", scene);
@@ -139,7 +153,8 @@ export function createWaitLabelOverlay(scene, camera, engine, container) {
     }
 
     const isSelected = mode === "expanded" || (mode === "normal" && a.id === _focusedId);
-    const navBtnHtml = isSelected ? `<button type="button" class="wait-marker__btn-navigate" data-id="${aid}">开始导航</button>` : "";
+    const isNavigating = a.id === _currentNavigatingId;
+    const navBtnHtml = (isSelected && !isNavigating) ? `<button type="button" class="wait-marker__btn-navigate" data-id="${aid}">开始导航</button>` : "";
     return `<div class="wait-marker__title">${name}</div><div class="wait-marker__wait ${cls}">${waitText}</div><div class="wait-marker__actions">${navBtnHtml}</div>`;
   }
 
