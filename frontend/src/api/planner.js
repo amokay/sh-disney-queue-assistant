@@ -70,10 +70,31 @@ export async function applyMockScenario(scenario) {
 
 /** 我的位置（场景 xz）→ 下一站 步行路线 */
 export async function fetchWalkToNext(scene_x, scene_z, attractionId) {
-  const res = await fetch(`${API_BASE}/api/planner/walk-to-next`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ scene_x, scene_z, attractionId }),
-  });
-  return parseJson(res);
+  try {
+    const res = await fetch(`${API_BASE}/api/planner/walk-to-next`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scene_x, scene_z, attractionId }),
+    });
+    return await parseJson(res);
+  } catch (e) {
+    console.warn("[walkToNext] API failed, generating straight-line fallback:", e.message);
+    // 静态部署兜底：加载景点坐标，生成起点→终点的直线路径
+    try {
+      const attrRes = await fetch("./assets/data/attractions_static.json");
+      if (!attrRes.ok) throw new Error("no static data");
+      const attrs = await attrRes.json();
+      const target = attrs.find(a => a.id === attractionId);
+      if (!target) throw new Error("attraction not found");
+      const tx = target.position_x, tz = target.position_z;
+      // 生成 10 个中间插值点的直线路径
+      const steps = 10;
+      const points = [];
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        points.push({ x: scene_x + (tx - scene_x) * t, z: scene_z + (tz - scene_z) * t });
+      }
+      return { points, segments: [] };
+    } catch { throw e; }
+  }
 }
