@@ -1240,36 +1240,58 @@ export function mountPlannerApp() {
 
   // --- 数据获取 ---
   async function loadData() {
-    const [attrList, waitList] = await Promise.all([
-      fetchAttractions(),
-      fetchWaitTimes(),
-    ]);
+    try {
+      console.info("[planner] loadData start");
+      const [attrList, waitList] = await Promise.all([
+        fetchAttractions(),
+        fetchWaitTimes(),
+      ]);
+      console.info("[planner] fetchAttractions returned", attrList.length, "items; fetchWaitTimes returned", waitList.length, "items");
 
-    // 必须先填充真实排队数据，再做首轮智能排序：
-    // rankRecommendations 内部会用当前 waitMap 计算机会推荐基线 lastOpportunityIds。
-    // 若此处 waitMap 仍为空，基线会是空集，随后 LBS 首次定位事件触发重排时，
-    // 启动瞬间就已存在的短排队必玩项目会被误判为「新出现的机会」而弹出 push。
-    waitMap = {};
-    for (const w of waitList) {
-      waitMap[w.id] = w;
+      // 必须先填充真实排队数据，再做首轮智能排序：
+      // rankRecommendations 内部会用当前 waitMap 计算机会推荐基线 lastOpportunityIds。
+      // 若此处 waitMap 仍为空，基线会是空集，随后 LBS 首次定位事件触发重排时，
+      // 启动瞬间就已存在的短排队必玩项目会被误判为「新出现的机会」而弹出 push。
+      waitMap = {};
+      for (const w of waitList) {
+        waitMap[w.id] = w;
+      }
+
+      if (attrList.length) {
+        allAttractions = attrList.slice();
+        // 智能排序生成当前推荐项目（top 5，含必玩加权 + 保底）
+        attractions = rankRecommendations();
+        console.info("[planner] rankRecommendations returned", attractions.length, "items");
+      } else {
+        console.warn("[planner] attrList is EMPTY — static JSON may not have loaded correctly");
+      }
+
+      renderCards();
+      renderOtherCards();
+    } catch (err) {
+      console.error("[planner] loadData error:", err);
+      // 出错时仍然调用 renderCards，保证 UI 不卡在白屏
+      renderCards();
     }
-
-    if (attrList.length) {
-      allAttractions = attrList.slice();
-      // 智能排序生成当前推荐项目（top 5，含必玩加权 + 保底）
-      attractions = rankRecommendations();
-    }
-
-    renderCards();
-    renderOtherCards();
   }
 
-  // 首次加载
+  // 首次加载（带重试）
   loadData().then(() => {
+    console.info("[planner] loadData completed, attractions:", attractions.length);
     // 启动保护期：loadData 完成后再等 15 秒，确保 LBS 首次定位等异步事件
     // 充分建立稳定基线后才允许 opportunity toast 弹出
     setTimeout(() => { appReady = true; }, 15_000);
+  }).catch((err) => {
+    console.error("[planner] loadData unhandled rejection:", err);
   });
+
+  // 安全网：如果 3 秒后卡片仍为空（loadData 可能因网络/解析问题静默失败），自动重试
+  setTimeout(() => {
+    if (allAttractions.length === 0) {
+      console.warn("[planner] 3s timeout: allAttractions still empty, retrying loadData...");
+      loadData().catch((e) => console.error("[planner] retry loadData error:", e));
+    }
+  }, 3000);
 
 
   // --- 测试按钮：模拟低排队（仅必玩+热门项目，每分钟自动推送一个） ---

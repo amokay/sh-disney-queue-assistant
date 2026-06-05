@@ -8,11 +8,19 @@ async function safeJson(res) {
 /** 静态数据兜底：当后端 API 不可用时（如 .io 静态部署），加载本地 JSON */
 async function fallbackJson(path) {
   try {
-    const res = await fetch(path);
-    if (!res.ok) return [];
+    // 添加时间戳避免 CDN/浏览器缓存返回旧文件
+    const url = path + (path.includes('?') ? '&' : '?') + '_t=' + Date.now();
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.warn("[fallbackJson]", path, "returned", res.status);
+      return [];
+    }
     const data = await res.json();
     return Array.isArray(data) ? data : [];
-  } catch { return []; }
+  } catch (e) {
+    console.warn("[fallbackJson]", path, "error:", e.message);
+    return [];
+  }
 }
 
 export async function fetchAttractions() {
