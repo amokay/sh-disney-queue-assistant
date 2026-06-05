@@ -364,7 +364,7 @@
         <div class="ipad-camera"></div>
 
         <!-- 嵌入内容 -->
-        <iframe src="http://localhost:3000/index_babylon.html" allow="accelerometer; gyroscope"></iframe>
+        <iframe src="./index_babylon.html" allow="accelerometer; gyroscope"></iframe>
 
         <!-- Home Indicator -->
         <div class="home-indicator"></div>
@@ -414,9 +414,9 @@
         const mode = tab.dataset.mode;
         const iframe = document.querySelector('.phone-screen iframe');
         if (mode === 'pretrip') {
-          iframe.src = 'http://localhost:3000/index_pretrip.html';
+          iframe.src = './index_pretrip.html';
         } else {
-          iframe.src = 'http://localhost:3000/index_babylon.html';
+          iframe.src = './index_babylon.html';
         }
       });
     });

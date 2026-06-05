@@ -12,5 +12,5 @@ jobs:
       - uses: checkout
       - uses: deploy-pages
         inputs:
-          deploy-dir: .
+          deploy-dir: frontend
           production-branch: pages
