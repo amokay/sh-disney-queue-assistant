@@ -39,18 +39,18 @@ export function mountLbsStatusBar(callbacks) {
     "box-shadow:0 6px 20px rgba(0,0,0,0.3)",
   ].join(";");
   document.body.appendChild(el);
-  console.info("[lbs-bar] mounted, el.offsetHeight:", el.offsetHeight);
+  el.style.display = "none"; // 默认隐藏
+  console.info("[lbs-bar] mounted (hidden by default, press U to show)");
 
   // ── 收起/展开状态 ──
   let collapsed = true;
 
-  // 按 U 键切换 UI 面板显示
+  // 按 U 键切换 lbs-bar 显示/隐藏
   window.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
     if (e.key === "u" || e.key === "U") {
-      const dock = document.getElementById("planner-dock");
       const hidden = el.style.display === "none";
       el.style.display = hidden ? "" : "none";
-      if (dock) dock.style.display = hidden ? "" : "none";
     }
   });
 
