@@ -382,34 +382,38 @@
   <p style="position:absolute;bottom:24px;font-size:12px;color:#999;">Fliggy Design</p>
 
   <script>
-    // ===== 访客记录上报 =====
-    (function () {
-      function logVisit(pagePath) {
-        try {
-          const path = pagePath || (location.pathname + location.search);
-          fetch('/api/visitors/log', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              page_path: path,
-              user_agent: navigator.userAgent
-            }),
-            keepalive: true
-          }).catch(() => {});
-        } catch (e) { /* ignore */ }
-      }
-      // 暴露给后续 iframe 切换时调用
-      window.__logVisit = logVisit;
-      // 页面初次加载
-      logVisit();
-      // iframe 内嵌页（行中 / 行前）首次加载也算一次访问
-      const iframeEl = document.querySelector('.phone-screen iframe');
-      if (iframeEl) {
-        try {
-          const initial = new URL(iframeEl.getAttribute('src'), location.origin);
-          logVisit(initial.pathname + initial.search);
-        } catch (e) {}
-      }
+    // ===== 访客记录 (localStorage) =====
+    (function(){
+      var LOG_KEY = 'disney_visitor_log';
+
+      // 收集访问信息
+      var record = {
+        id: Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        visitedAt: new Date().toISOString(),
+        page: location.pathname + location.hash,
+        device: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' :
+                /iPad|Tablet/i.test(navigator.userAgent) ? 'tablet' : 'desktop',
+        userAgent: navigator.userAgent,
+        screenWidth: screen.width,
+        screenHeight: screen.height,
+        language: navigator.language,
+        referrer: document.referrer || '(direct)'
+      };
+
+      // 读取现有记录
+      var logs = [];
+      try {
+        logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      } catch(e) { logs = []; }
+
+      // 追加新记录（最多保留 500 条，防止 localStorage 溢出）
+      logs.unshift(record);
+      if (logs.length > 500) logs = logs.slice(0, 500);
+
+      // 存储
+      try {
+        localStorage.setItem(LOG_KEY, JSON.stringify(logs));
+      } catch(e) { console.log('[visitor-log] storage full'); }
     })();
 
     const tabs = document.querySelectorAll('.device-tab');
@@ -445,10 +449,8 @@
         const iframe = document.querySelector('.phone-screen iframe');
         if (mode === 'pretrip') {
           iframe.src = 'http://localhost:3000/index_pretrip.html';
-          window.__logVisit && window.__logVisit('/index_pretrip.html');
         } else {
           iframe.src = 'http://localhost:3000/index_babylon.html';
-          window.__logVisit && window.__logVisit('/index_babylon.html');
         }
       });
     });

@@ -58,7 +58,7 @@ router.post("/log", (req, res) => {
 
 /**
  * GET /api/visitors?page=1&limit=50
- * 按时间倒序返回访客记录及总数。
+ * 按时间倒序返回访客记录及总数，附带独立IP数。
  */
 router.get("/", (req, res) => {
   try {
@@ -67,6 +67,7 @@ router.get("/", (req, res) => {
     const offset = (page - 1) * limit;
 
     const total = db.prepare(`SELECT COUNT(*) AS c FROM visitors`).get().c;
+    const uniqueIps = db.prepare(`SELECT COUNT(DISTINCT ip) AS c FROM visitors WHERE ip != ''`).get().c;
     const rows = db
       .prepare(
         `SELECT id, visited_at, page_path, user_agent, device_type, ip
@@ -79,10 +80,41 @@ router.get("/", (req, res) => {
     res.json({
       ok: true,
       total,
+      uniqueIps,
       page,
       limit,
       pages: Math.max(1, Math.ceil(total / limit)),
       data: rows,
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+/**
+ * GET /api/visitors/stats
+ * 返回按 IP 维度的统计：每个 IP 的访问次数、最近访问时间，按次数降序。
+ */
+router.get("/stats", (req, res) => {
+  try {
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const rows = db
+      .prepare(
+        `SELECT ip, COUNT(*) AS visit_count, MAX(visited_at) AS last_visit
+         FROM visitors
+         WHERE ip != ''
+         GROUP BY ip
+         ORDER BY visit_count DESC
+         LIMIT ?`
+      )
+      .all(limit);
+
+    const uniqueIps = db.prepare(`SELECT COUNT(DISTINCT ip) AS c FROM visitors WHERE ip != ''`).get().c;
+
+    res.json({
+      ok: true,
+      uniqueIps,
+      topIps: rows,
     });
   } catch (e) {
     res.status(500).json({ ok: false, error: String(e?.message || e) });
