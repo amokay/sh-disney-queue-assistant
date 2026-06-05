@@ -18,3 +18,10 @@ function inferApiBase() {
 }
 
 export const API_BASE = inferApiBase();
+
+/** 是否为 .io 静态托管（无后端 API） */
+export const IS_STATIC_DEPLOY = (() => {
+  if (typeof window === "undefined" || !window.location) return false;
+  const h = window.location.hostname;
+  return h.endsWith(".alibaba-inc.com") || h.endsWith(".alipay.com");
+})();

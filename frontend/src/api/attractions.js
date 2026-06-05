@@ -1,4 +1,4 @@
-import { API_BASE } from "./base.js";
+import { API_BASE, IS_STATIC_DEPLOY } from "./base.js";
 
 async function safeJson(res) {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -16,6 +16,7 @@ async function fallbackJson(path) {
 }
 
 export async function fetchAttractions() {
+  if (IS_STATIC_DEPLOY) return fallbackJson("./assets/data/attractions_static.json");
   try {
     const res = await fetch(`${API_BASE}/api/attractions`);
     const data = await safeJson(res);
@@ -27,6 +28,7 @@ export async function fetchAttractions() {
 }
 
 export async function fetchWaitTimes() {
+  if (IS_STATIC_DEPLOY) return fallbackJson("./assets/data/waittimes_static.json");
   try {
     const res = await fetch(`${API_BASE}/api/waittimes`);
     const data = await safeJson(res);
