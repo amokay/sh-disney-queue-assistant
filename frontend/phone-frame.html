@@ -382,40 +382,6 @@
   <p style="position:absolute;bottom:24px;font-size:12px;color:#999;">Fliggy Design</p>
 
   <script>
-    // ===== 访客记录 (localStorage) =====
-    (function(){
-      var LOG_KEY = 'disney_visitor_log';
-
-      // 收集访问信息
-      var record = {
-        id: Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-        visitedAt: new Date().toISOString(),
-        page: location.pathname + location.hash,
-        device: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' :
-                /iPad|Tablet/i.test(navigator.userAgent) ? 'tablet' : 'desktop',
-        userAgent: navigator.userAgent,
-        screenWidth: screen.width,
-        screenHeight: screen.height,
-        language: navigator.language,
-        referrer: document.referrer || '(direct)'
-      };
-
-      // 读取现有记录
-      var logs = [];
-      try {
-        logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
-      } catch(e) { logs = []; }
-
-      // 追加新记录（最多保留 500 条，防止 localStorage 溢出）
-      logs.unshift(record);
-      if (logs.length > 500) logs = logs.slice(0, 500);
-
-      // 存储
-      try {
-        localStorage.setItem(LOG_KEY, JSON.stringify(logs));
-      } catch(e) { console.log('[visitor-log] storage full'); }
-    })();
-
     const tabs = document.querySelectorAll('.device-tab');
     const container = document.querySelector('.phone-container');
     const slider = document.querySelector('.device-tabs-slider');
