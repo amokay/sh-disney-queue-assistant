@@ -21,14 +21,18 @@ import { syncGlbPoiBindings } from "./services/syncGlbPoiBindings.js";
 import { llmConfigStatus } from "./services/llmClient.js";
 import sessionRoutes from "./routes/session.js";
 import plannerRoutes from "./routes/planner.js";
+import visitorsRoutes from "./routes/visitors.js";
+import { runVisitorsSchema } from "./db/visitorsSchema.js";
 import { clearOverrides } from "./services/mockWaitService.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = path.join(__dirname, "..", "frontend");
 
 runSeed();
+runVisitorsSchema();
 
 const app = express();
+app.set("trust proxy", true);
 
 app.use(
   cors({
@@ -69,6 +73,7 @@ app.post("/api/route/smart-plan", routeController.postSmartPlanRoute);
 app.use("/api/route", routeRoutes);
 app.use("/api/session", sessionRoutes);
 app.use("/api/planner", plannerRoutes);
+app.use("/api/visitors", visitorsRoutes);
 app.use("/api/amap", amapApiRoutes);
 app.use("/api/baidu", baiduApiRoutes);
 
