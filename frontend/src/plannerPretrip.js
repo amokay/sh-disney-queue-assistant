@@ -103,7 +103,7 @@ export function mountPlannerPretrip() {
       <button type="button" class="planner-dock__handle" id="planner-dock-handle" aria-label="展开或收起面板">
         <span class="planner-dock__handle-bar"></span>
       </button>
-      <h2 class="planner-dock__title-gradient">提前规划游玩项目，让你省时玩更多<span class="planner-dock__refresh-time" id="planner-refresh-time"></span></h2>
+      <h2 class="planner-dock__title-gradient">提前规划游玩项目，让你轻松玩更多<span class="planner-dock__refresh-time" id="planner-refresh-time"></span></h2>
       <div class="planner-dock__date-tabs" id="planner-date-tabs">
         <div class="planner-dock__date-tab is-active" data-date="2025-06-21">
           <span class="planner-dock__date-tab-main">6月21日<span class="planner-dock__date-tab-sub">高峰</span></span>

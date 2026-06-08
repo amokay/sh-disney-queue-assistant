@@ -35,9 +35,13 @@
       margin-bottom: 40px;
       padding: 4px;
       background: rgba(255, 255, 255, 0.6);
-      border-radius: 20px;
+      border-radius: 28px;
       backdrop-filter: blur(10px);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .device-tabs.hidden {
+      display: none;
     }
 
     .device-tabs-slider {
@@ -75,42 +79,48 @@
       color: #fff;
     }
 
+    /* 入口模式 tab 字号缩小，保持与 iPhone/Foldable tab 同高 */
+    #entry-tabs .device-tab {
+      font-size: 12px;
+      padding: 8px 16px;
+    }
+
     .phone-container {
       position: relative;
       width: 375px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.4s ease;
       height: 812px;
       transition: all 0.4s ease;
     }
 
-    /* iPad 模式 */
-    .phone-container--ipad {
-      width: 1024px;
+    /* Foldable 模式 - 三星三折叠展开尺寸 (4:3 等比例，高度与 iPhone 一致) */
+    .phone-container--foldable {
+      width: 1083px;
       height: 812px;
     }
 
-    .phone-container--ipad .phone-frame {
-      border-width: 16px;
+    .phone-container--foldable .phone-frame {
       border-radius: 30px;
     }
 
-    .phone-container--ipad .phone-screen {
+    .phone-container--foldable .phone-screen {
       border-radius: 16px;
     }
 
-    .phone-container--ipad .phone-screen iframe {
+    .phone-container--foldable .phone-screen iframe {
       border-radius: 16px;
     }
 
-    .phone-container--ipad .dynamic-island {
+    .phone-container--foldable .dynamic-island {
       display: none;
     }
 
-    .phone-container--ipad .home-indicator {
+    .phone-container--foldable .home-indicator {
       width: 180px;
     }
 
-    /* iPad 前置摄像头（左侧居中） */
-    .ipad-camera {
+    /* Foldable 前置摄像头（左侧居中） */
+    .foldable-camera {
       display: none;
       position: absolute;
       left: 20px;
@@ -123,15 +133,15 @@
       z-index: 10;
     }
 
-    .phone-container--ipad .ipad-camera {
+    .phone-container--foldable .foldable-camera {
       display: block;
     }
 
-    /* iPad 模式隐藏物理按键 */
-    .phone-container--ipad::after,
-    .phone-container--ipad::before,
-    .phone-container--ipad .volume-up,
-    .phone-container--ipad .volume-down {
+    /* Foldable 模式隐藏物理按键 */
+    .phone-container--foldable::after,
+    .phone-container--foldable::before,
+    .phone-container--foldable .volume-up,
+    .phone-container--foldable .volume-down {
       display: none;
     }
 
@@ -158,6 +168,12 @@
       border-radius: 40px;
       overflow: hidden;
       background: #000;
+      transition: background-color 0.2s ease;
+    }
+
+    /* 入口模式下屏幕底色用浅灰，避免 iframe 切换瞬间露出黑底 */
+    .phone-container--entry .phone-screen {
+      background: #F2F3F5;
     }
 
     /* 灵动岛 */
@@ -195,6 +211,8 @@
       height: 100%;
       border: none;
       border-radius: 40px;
+      /* iframe 自身保留浅色底，防止跨页加载瞬间出现黑色闪屏 */
+      background-color: #F2F3F5;
     }
 
     /* 右侧电源键 */
@@ -287,66 +305,75 @@
 
     /* 响应式缩放 - iPhone */
     @media (max-height: 900px) {
-      .phone-container:not(.phone-container--ipad) {
+      .phone-container:not(.phone-container--foldable) {
         transform: scale(0.85);
       }
     }
 
     @media (max-height: 750px) {
-      .phone-container:not(.phone-container--ipad) {
+      .phone-container:not(.phone-container--foldable) {
         transform: scale(0.7);
       }
     }
 
     @media (max-width: 420px) {
-      .phone-container:not(.phone-container--ipad) {
+      .phone-container:not(.phone-container--foldable) {
         transform: scale(0.8);
       }
     }
 
     @media (max-width: 360px) {
-      .phone-container:not(.phone-container--ipad) {
+      .phone-container:not(.phone-container--foldable) {
         transform: scale(0.65);
       }
     }
 
-    /* 响应式缩放 - iPad */
+    /* 响应式缩放 - Foldable */
     @media (max-width: 1100px) {
-      .phone-container--ipad {
+      .phone-container--foldable {
         transform: scale(0.75);
       }
     }
 
     @media (max-width: 820px) {
-      .phone-container--ipad {
+      .phone-container--foldable {
         transform: scale(0.55);
       }
     }
 
     @media (max-width: 600px) {
-      .phone-container--ipad {
+      .phone-container--foldable {
         transform: scale(0.4);
       }
     }
 
     @media (max-height: 860px) {
-      .phone-container--ipad {
+      .phone-container--foldable {
         transform: scale(0.7);
       }
     }
 
     @media (max-height: 700px) {
-      .phone-container--ipad {
+      .phone-container--foldable {
         transform: scale(0.55);
       }
     }
   </style>
 </head>
 <body>
-  <div class="device-tabs">
+  <!-- 入口模式：页面切换 -->
+  <div class="device-tabs hidden" id="entry-tabs">
+    <div class="device-tabs-slider"></div>
+    <button class="device-tab active" data-page="entry">订详</button>
+    <button class="device-tab" data-page="itinerary">行程卡</button>
+    <button class="device-tab" data-page="qianwen">千问</button>
+  </div>
+
+  <!-- 行中/行前模式：设备尺寸切换 -->
+  <div class="device-tabs" id="size-tabs">
     <div class="device-tabs-slider"></div>
     <button class="device-tab active" data-device="iphone">iPhone</button>
-    <button class="device-tab" data-device="ipad">iPad</button>
+    <button class="device-tab" data-device="foldable">Foldable</button>
   </div>
 
   <div class="phone-container">
@@ -360,8 +387,8 @@
         <!-- 灵动岛 -->
         <div class="dynamic-island"></div>
 
-        <!-- iPad 前置摄像头 -->
-        <div class="ipad-camera"></div>
+        <!-- Foldable 前置摄像头 -->
+        <div class="foldable-camera"></div>
 
         <!-- 嵌入内容 -->
         <iframe src="./index_babylon.html" allow="accelerometer; gyroscope"></iframe>
@@ -372,9 +399,10 @@
     </div>
   </div>
 
-  <!-- 右下角行中/行前切换 -->
+  <!-- 右下角入口/行中/行前切换 -->
   <div class="mode-tabs">
     <div class="mode-tabs-slider"></div>
+    <button class="mode-tab" data-mode="entry">入口</button>
     <button class="mode-tab active" data-mode="inpark">行中</button>
     <button class="mode-tab" data-mode="pretrip">行前（2日票）</button>
   </div>
@@ -382,19 +410,60 @@
   <p style="position:absolute;bottom:24px;font-size:12px;color:#999;">Fliggy Design</p>
 
   <script>
-    const tabs = document.querySelectorAll('.device-tab');
     const container = document.querySelector('.phone-container');
-    const slider = document.querySelector('.device-tabs-slider');
 
-    function moveSlider(activeTab) {
-      slider.style.width = activeTab.offsetWidth + 'px';
-      slider.style.transform = 'translateX(' + (activeTab.offsetLeft - 4) + 'px)';
+    // === 入口模式 tabs ===
+    const entryTabs = document.querySelector('#entry-tabs');
+    const entryButtons = entryTabs.querySelectorAll('.device-tab');
+    const entrySlider = entryTabs.querySelector('.device-tabs-slider');
+
+    const pageMap = {
+      entry: './index_detail_entry.html',
+      itinerary: './index_itinerary.html',
+      qianwen: './index_qianwen.html'
+    };
+
+    function moveEntrySlider(activeTab) {
+      entrySlider.style.width = activeTab.offsetWidth + 'px';
+      entrySlider.style.transform = 'translateX(' + (activeTab.offsetLeft - 4) + 'px)';
     }
+    moveEntrySlider(entryTabs.querySelector('.device-tab.active'));
 
-    // 初始化滑块位置
-    moveSlider(document.querySelector('.device-tab.active'));
+    entryButtons.forEach(tab => {
+      tab.addEventListener('click', () => {
+        entryButtons.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        moveEntrySlider(tab);
+        const iframe = document.querySelector('.phone-screen iframe');
+        iframe.src = pageMap[tab.dataset.page] || './index_entry.html';
+      });
+    });
 
-    // 右下角模式切换
+    // === 行中/行前模式 tabs（设备尺寸） ===
+    const sizeTabs = document.querySelector('#size-tabs');
+    const sizeButtons = sizeTabs.querySelectorAll('.device-tab');
+    const sizeSlider = sizeTabs.querySelector('.device-tabs-slider');
+
+    function moveSizeSlider(activeTab) {
+      sizeSlider.style.width = activeTab.offsetWidth + 'px';
+      sizeSlider.style.transform = 'translateX(' + (activeTab.offsetLeft - 4) + 'px)';
+    }
+    moveSizeSlider(sizeTabs.querySelector('.device-tab.active'));
+
+    sizeButtons.forEach(tab => {
+      tab.addEventListener('click', () => {
+        sizeButtons.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        moveSizeSlider(tab);
+        if (tab.dataset.device === 'foldable') {
+          container.classList.add('phone-container--foldable');
+        } else {
+          container.classList.remove('phone-container--foldable');
+        }
+      });
+    });
+
+    // === 右下角模式切换 ===
     const modeTabs = document.querySelectorAll('.mode-tab');
     const modeSlider = document.querySelector('.mode-tabs-slider');
 
@@ -413,25 +482,39 @@
 
         const mode = tab.dataset.mode;
         const iframe = document.querySelector('.phone-screen iframe');
-        if (mode === 'pretrip') {
-          iframe.src = './index_pretrip.html';
-        } else {
-          iframe.src = './index_babylon.html';
-        }
-      });
-    });
 
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        moveSlider(tab);
-
-        const device = tab.dataset.device;
-        if (device === 'ipad') {
-          container.classList.add('phone-container--ipad');
+        if (mode === 'entry') {
+          // 入口模式：显示页面切换 tabs，隐藏设备尺寸 tabs，强制 iPhone 尺寸
+          entryTabs.classList.remove('hidden');
+          entryTabs.classList.add('visible');
+          sizeTabs.classList.remove('visible');
+          sizeTabs.classList.add('hidden');
+          container.classList.remove('phone-container--foldable');
+          // 切到入口模式：让屏幕底色提前变浅，避免 iframe 加载瞬间露黑
+          container.classList.add('phone-container--entry');
+          // entry-tabs 之前是 hidden（display:none），slider 宽度为 0，需在显示后重算
+          requestAnimationFrame(() => {
+            moveEntrySlider(entryTabs.querySelector('.device-tab.active'));
+          });
+          const activePage = entryTabs.querySelector('.device-tab.active').dataset.page;
+          iframe.src = pageMap[activePage] || './index_detail_entry.html';
         } else {
-          container.classList.remove('phone-container--ipad');
+          // 行中/行前：显示设备尺寸 tabs，隐藏页面切换 tabs，强制重置为 iPhone
+          entryTabs.classList.remove('visible');
+          entryTabs.classList.add('hidden');
+          sizeTabs.classList.remove('hidden');
+          sizeTabs.classList.add('visible');
+          // 重置 size-tabs 选中状态为 iPhone
+          sizeButtons.forEach(t => t.classList.remove('active'));
+          sizeTabs.querySelector('[data-device="iphone"]').classList.add('active');
+          container.classList.remove('phone-container--foldable');
+          container.classList.remove('phone-container--entry');
+          moveSizeSlider(sizeTabs.querySelector('.device-tab.active'));
+          if (mode === 'pretrip') {
+            iframe.src = './index_pretrip.html';
+          } else {
+            iframe.src = './index_babylon.html';
+          }
         }
       });
     });
