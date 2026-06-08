@@ -57,9 +57,10 @@ export function mountPlannerApp() {
   `;
   document.body.appendChild(titlebar);
 
-  // 返回按钮事件
+  // 返回按钮事件 — 点击返回入口tab
   titlebar.querySelector(".planner-titlebar__btn--back")?.addEventListener("click", (e) => {
     e.preventDefault();
+    try { window.parent.document.querySelector('.mode-tab[data-mode=entry]').click(); } catch(err) {}
   });
 
   // 状态栏时间：HH:MM，每分钟更新
