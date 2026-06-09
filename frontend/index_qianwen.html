@@ -781,7 +781,7 @@
           </div>
           <span class="suggest-strip__text">使用上迪排队助手，实时规划更轻松</span>
         </div>
-        <div class="suggest-strip">
+        <div class="suggest-strip suggest-strip--disabled" style="cursor: default;">
           <div class="suggest-strip__icon">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="transform: rotate(6deg);">
               <defs>
@@ -796,7 +796,7 @@
           </div>
           <span class="suggest-strip__text">购买迪士尼尊享卡</span>
         </div>
-        <div class="suggest-strip">
+        <div class="suggest-strip suggest-strip--disabled" style="cursor: default;">
           <div class="suggest-strip__icon">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="transform: rotate(6deg);">
               <defs>
@@ -881,8 +881,8 @@
       setInterval(renderQianwenStatusTime, 60000);
     }, msToNextMin);
 
-    // ===== 所有 .suggest-strip 点击跳转到行中 tab =====
-    document.querySelectorAll('.suggest-strip').forEach(strip => {
+    // ===== .suggest-strip 点击跳转到行中 tab（仅未禁用的）=====
+    document.querySelectorAll('.suggest-strip:not(.suggest-strip--disabled)').forEach(strip => {
       strip.addEventListener('click', () => {
         try {
           const tab = window.parent.document.querySelector('.mode-tab[data-mode="inpark"]');
