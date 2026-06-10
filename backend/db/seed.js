@@ -141,7 +141,7 @@ const attractions = [
   },
   {
     id: "dumbo",
-    name: "小飞象"
+    name: "小飞象",
     zone: "梦幻世界",
     position_x: -21,
     position_y: 0,
