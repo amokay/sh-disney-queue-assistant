@@ -28,8 +28,8 @@ export function createUserLocationMarker(scene) {
   disc.renderingGroupId = 2;
 
   const discMat = new BABYLON.StandardMaterial("lbsDiscMat", scene);
-  discMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 1.0);  // #6666FF
-  discMat.emissiveColor = new BABYLON.Color3(0.4, 0.4, 1.0); // #6666FF 自发光
+  discMat.diffuseColor = new BABYLON.Color3(0.23, 0.51, 0.96);  // #3B82F6 浅蓝色
+  discMat.emissiveColor = new BABYLON.Color3(0.23, 0.51, 0.96); // #3B82F6 自发光
   discMat.specularColor = new BABYLON.Color3(0, 0, 0);
   discMat.alpha = 0.85;
   discMat.backFaceCulling = false;
@@ -48,8 +48,8 @@ export function createUserLocationMarker(scene) {
   ring.renderingGroupId = 1;
 
   const ringMat = new BABYLON.StandardMaterial("lbsRingMat", scene);
-  ringMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 1.0);  // #6666FF
-  ringMat.emissiveColor = new BABYLON.Color3(0.4, 0.4, 1.0); // #6666FF
+  ringMat.diffuseColor = new BABYLON.Color3(0.23, 0.51, 0.96);  // #3B82F6 浅蓝色
+  ringMat.emissiveColor = new BABYLON.Color3(0.23, 0.51, 0.96); // #3B82F6
   ringMat.specularColor = new BABYLON.Color3(0, 0, 0);
   ringMat.alpha = 0.45;
   ringMat.backFaceCulling = false;
