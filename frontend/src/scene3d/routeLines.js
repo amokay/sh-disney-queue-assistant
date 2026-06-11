@@ -149,8 +149,8 @@ export function createRouteOverlays(scene) {
     _walkRouteMesh.parent = routeRoot;
     _walkRouteMesh.renderingGroupId = 1;
 
-    // 渐变流动 ShaderMaterial
-    _walkRouteMat = _createFlowMaterial("walkRouteFlow", scene, 0.6);
+    // 渐变流动 ShaderMaterial (降低透明度使路径更浅)
+    _walkRouteMat = _createFlowMaterial("walkRouteFlow", scene, 0.45);
     _walkRouteMesh.material = _walkRouteMat;
 
     // 注册动画
@@ -199,8 +199,8 @@ export function createRouteOverlays(scene) {
     _walkRouteMesh.parent = routeRoot;
     _walkRouteMesh.renderingGroupId = 1;
 
-    // 渐变流动 ShaderMaterial
-    _walkRouteMat = _createFlowMaterial("routePreviewFlow", scene, 0.55);
+    // 渐变流动 ShaderMaterial (降低透明度使路径更浅)
+    _walkRouteMat = _createFlowMaterial("routePreviewFlow", scene, 0.4);
     _walkRouteMesh.material = _walkRouteMat;
 
     // 注册动画
