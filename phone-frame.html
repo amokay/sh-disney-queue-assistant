@@ -165,7 +165,7 @@
       position: relative;
       width: 100%;
       height: 100%;
-      border-radius: 40px;
+      border-radius: 38px; /* phone-frame(50px) - border(12px) = 38px */
       overflow: hidden;
       background: #000;
       transition: background-color 0.2s ease;
@@ -210,7 +210,7 @@
       width: calc(100% + 4px);
       height: calc(100% + 4px);
       border: none;
-      border-radius: 40px;
+      border-radius: 38px; /* 与.phone-screen保持一致 */
       /* iframe 自身保留浅色底，防止跨页加载瞬间出现黑色闪屏 */
       background-color: #F2F3F5;
     }
