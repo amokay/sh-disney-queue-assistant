@@ -32,8 +32,8 @@
       position: relative;
       display: flex;
       gap: 4px;
-      margin-bottom: 40px;
       padding: 4px;
+      margin-bottom: 40px;
       background: rgba(255, 255, 255, 0.6);
       border-radius: 28px;
       backdrop-filter: blur(10px);
@@ -88,12 +88,12 @@
     .phone-container {
       position: relative;
       width: 375px;
-      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.4s ease;
       height: 812px;
-      transition: all 0.4s ease;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.4s ease;
+      flex-shrink: 0;
     }
 
-    /* Foldable 模式 - 三星三折叠展开尺寸 (4:3 等比例，高度与 iPhone 一致) */
+    /* Foldable 模式 - 三星三折叠展开尺寸 (高度不变，只增加宽度) */
     .phone-container--foldable {
       width: 1083px;
       height: 812px;
@@ -158,6 +158,7 @@
         inset 0 0 4px rgba(255, 255, 255, 0.05);
       background: #000;
       overflow: hidden;
+      box-sizing: border-box;
     }
 
     /* 屏幕区域 */

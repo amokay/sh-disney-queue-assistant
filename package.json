@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "shanghai-disney-twin",
+  "name": "sh-disney",
   "scripts": {
     "start": "npm --prefix backend start",
     "dev": "npm --prefix backend run dev",

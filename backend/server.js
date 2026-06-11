@@ -198,9 +198,9 @@ app.post("/api/park-roads/delete", (req, res) => {
   }
 });
 
-// Babylon.js CDN 需要 unsafe-eval；对 index_babylon.html 放开 CSP
+// Babylon.js CDN 需要 unsafe-eval；对 index_babylon.html 和 index_pretrip.html 放开 CSP
 app.use((req, res, next) => {
-  if (req.path === "/index_babylon.html" || req.path.startsWith("/src/scene3d/")) {
+  if (req.path === "/index_babylon.html" || req.path === "/index_pretrip.html" || req.path.startsWith("/src/scene3d/")) {
     res.setHeader(
       "Content-Security-Policy",
       "default-src 'self' https://cdn.babylonjs.com; " +
