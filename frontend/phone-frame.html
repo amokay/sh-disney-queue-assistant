@@ -398,10 +398,9 @@
     </div>
   </div>
 
-  <!-- 右下角入口/行中/行前切换 -->
+  <!-- 右下角行中/行前切换 -->
   <div class="mode-tabs">
     <div class="mode-tabs-slider"></div>
-    <button class="mode-tab" data-mode="entry">入口</button>
     <button class="mode-tab active" data-mode="inpark">行中</button>
     <button class="mode-tab" data-mode="pretrip">行前（2日票）</button>
   </div>
@@ -481,38 +480,21 @@
         const mode = tab.dataset.mode;
         const iframe = document.querySelector('.phone-screen iframe');
 
-        if (mode === 'entry') {
-          // 入口模式：显示页面切换 tabs，隐藏设备尺寸 tabs，强制 iPhone 尺寸
-          entryTabs.classList.remove('hidden');
-          entryTabs.classList.add('visible');
-          sizeTabs.classList.remove('visible');
-          sizeTabs.classList.add('hidden');
-          container.classList.remove('phone-container--foldable');
-          // 切到入口模式：让屏幕底色提前变浅，避免 iframe 加载瞬间露黑
-          container.classList.add('phone-container--entry');
-          // entry-tabs 之前是 hidden（display:none），slider 宽度为 0，需在显示后重算
-          requestAnimationFrame(() => {
-            moveEntrySlider(entryTabs.querySelector('.device-tab.active'));
-          });
-          const activePage = entryTabs.querySelector('.device-tab.active').dataset.page;
-          iframe.src = pageMap[activePage] || './index_detail_entry.html';
+        // 行中/行前：显示设备尺寸 tabs，隐藏页面切换 tabs，强制重置为 iPhone
+        entryTabs.classList.remove('visible');
+        entryTabs.classList.add('hidden');
+        sizeTabs.classList.remove('hidden');
+        sizeTabs.classList.add('visible');
+        // 重置 size-tabs 选中状态为 iPhone
+        sizeButtons.forEach(t => t.classList.remove('active'));
+        sizeTabs.querySelector('[data-device="iphone"]').classList.add('active');
+        container.classList.remove('phone-container--foldable');
+        container.classList.remove('phone-container--entry');
+        moveSizeSlider(sizeTabs.querySelector('.device-tab.active'));
+        if (mode === 'pretrip') {
+          iframe.src = './index_pretrip.html';
         } else {
-          // 行中/行前：显示设备尺寸 tabs，隐藏页面切换 tabs，强制重置为 iPhone
-          entryTabs.classList.remove('visible');
-          entryTabs.classList.add('hidden');
-          sizeTabs.classList.remove('hidden');
-          sizeTabs.classList.add('visible');
-          // 重置 size-tabs 选中状态为 iPhone
-          sizeButtons.forEach(t => t.classList.remove('active'));
-          sizeTabs.querySelector('[data-device="iphone"]').classList.add('active');
-          container.classList.remove('phone-container--foldable');
-          container.classList.remove('phone-container--entry');
-          moveSizeSlider(sizeTabs.querySelector('.device-tab.active'));
-          if (mode === 'pretrip') {
-            iframe.src = './index_pretrip.html';
-          } else {
-            iframe.src = './index_babylon.html';
-          }
+          iframe.src = './index_babylon.html';
         }
       });
     });

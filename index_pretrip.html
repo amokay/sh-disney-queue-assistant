@@ -13,7 +13,7 @@
     <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
     <style>
       html, body {
-        background: linear-gradient(to bottom, #7272DD, #494987);
+        background: radial-gradient(75.87% 50.73% at 50.01% 45.63%, #1E40AF 0%, #1E3A8A 50%, #172554 100%);
       }
       .loading-overlay {
         position: fixed;
@@ -22,7 +22,7 @@
         align-items: center;
         justify-content: center;
         padding-bottom: calc(35vh - 5px);
-        background: linear-gradient(to bottom, #7272DD, #494987);
+        background: radial-gradient(75.87% 50.73% at 50.01% 45.63%, #1E40AF 0%, #1E3A8A 50%, #172554 100%);
         z-index: 9999;
         transition: opacity 0.5s ease;
       }
@@ -40,9 +40,9 @@
     <div id="loading-overlay" class="loading-overlay">
       <svg class="progress-ring" width="40" height="40" viewBox="0 0 80 80">
         <circle cx="40" cy="40" r="36"
-          fill="none" stroke="#51519A" stroke-width="8"/>
+          fill="none" stroke="#1E3A8A" stroke-width="8"/>
         <circle id="progress-ring-fill" class="progress-ring__fill" cx="40" cy="40" r="36"
-          fill="none" stroke="#9999F6" stroke-width="8"
+          fill="none" stroke="#3B82F6" stroke-width="8"
           stroke-dasharray="226.2" stroke-dashoffset="226.2"
           stroke-linecap="round" transform="rotate(-90 40 40)"/>
       </svg>

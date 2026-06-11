@@ -78,7 +78,7 @@ export class SceneManager {
     this._scene = new BABYLON.Scene(this._engine);
     // ★ 使用右手坐标系，与 Three.js / glTF 标准一致，避免模型左右镜像
     this._scene.useRightHandedSystem = true;
-    this._scene.clearColor = new BABYLON.Color4(0.286, 0.286, 0.529, 1); // 匹配页面渐变底部色 #494987
+    this._scene.clearColor = new BABYLON.Color4(0.118, 0.251, 0.686, 1); // 迪士尼主蓝色 #1E40AF
     // 不用线性雾（逐片元计算，移动端有开销），远景淡出靠地面径向渐变实现
 
     // ACES Tone Mapping（移动端必开）
