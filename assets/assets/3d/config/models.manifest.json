@@ -1,0 +1,33 @@
+{
+  "autoDiscover": true,
+  "pickRules": [
+    {
+      "match": "landmarks/02_seven-dwarfs-mine-train",
+      "pickableAttractionId": "mine"
+    },
+    {
+      "match": "seven-dwarfs-mine-train",
+      "pickableAttractionId": "mine"
+    },
+    {
+      "match": "Main_castle",
+      "pickableAttractionId": "castle"
+    },
+    {
+      "match": "castle",
+      "pickableAttractionId": "castle"
+    },
+    {
+      "match": "landmarks/03_caribbean-pirates",
+      "pickableAttractionId": "pirates"
+    },
+    {
+      "match": "caribbean-pirates",
+      "pickableAttractionId": "pirates"
+    },
+    {
+      "match": "landmarks/05_fantasia-carousel",
+      "pickableAttractionId": "fantasia-carousel"
+    }
+  ]
+}

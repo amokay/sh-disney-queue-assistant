@@ -1,0 +1,11 @@
+{
+  "anchorLatGCJ": 31.139219,
+  "anchorLngGCJ": 121.662232,
+  "anchorSceneX": 0,
+  "anchorSceneZ": 2,
+  "sceneUnitsPerMeter": 0.094064224758436,
+  "headingDeg": -179.71,
+  "flipSceneX": true,
+  "flipSceneZ": false,
+  "note": "高德经度增大=地图向东。若场景里东西与高德左右反了，设 flipSceneX 或 flipSceneZ 为 true（沿锚点镜像）。本配置在 flipSceneX=true 下重拟合 heading，使城堡 GCJ(31.143558,121.659627) 仍落在场景约(-23.56,-43.26)；雷鸣山应在城堡东侧（经度更大）。anchorSceneZ=2：全体 GCJ→场景投影沿场景正南（+Z）平移 2 单位。改 geo 后请 npm run apply-geo。"
+}
