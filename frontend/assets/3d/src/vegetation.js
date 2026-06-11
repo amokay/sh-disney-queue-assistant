@@ -22,8 +22,8 @@ import { applyMaterialRulesToRoot, fetchModelMaterialRules } from "./modelMateri
  */
 export async function loadVegetation(scene, opts = {}) {
   const BABYLON = window.BABYLON;
-  const dataUrl = opts.dataUrl || "/assets/3d/config/vegetation_instances.json";
-  const modelBasePath = opts.modelBasePath || "/assets/3d/models/vegetation/";
+  const dataUrl = opts.dataUrl || "./assets/3d/config/vegetation_instances.json";
+  const modelBasePath = opts.modelBasePath || "./assets/3d/models/vegetation/";
 
   // ── 1. 加载摆放数据 ──
   let data;

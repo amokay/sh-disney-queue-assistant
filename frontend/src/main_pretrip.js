@@ -103,7 +103,7 @@ function mergeAttractionsPretrip(mockAttractions, predictedWaits) {
 // ─── 数据加载（复用 3D 配置文件） ───
 async function loadManifestDoc() {
   try {
-    const res = await fetch("/assets/3d/config/models.manifest.json");
+    const res = await fetch("./assets/3d/config/models.manifest.json");
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; }
@@ -111,7 +111,7 @@ async function loadManifestDoc() {
 
 async function loadPinsDoc() {
   try {
-    const res = await fetch("/assets/3d/config/map_pins.json");
+    const res = await fetch("./assets/3d/config/map_pins.json");
     if (!res.ok) return [];
     const j = await res.json();
     return Array.isArray(j) ? j : [];
@@ -120,7 +120,7 @@ async function loadPinsDoc() {
 
 async function loadTreePositions() {
   try {
-    const res = await fetch("/assets/3d/config/tree_positions.json");
+    const res = await fetch("./assets/3d/config/tree_positions.json");
     if (!res.ok) return [];
     return await res.json();
   } catch { return []; }

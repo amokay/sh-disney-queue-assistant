@@ -3,6 +3,7 @@
  * ─────────────────────
  * 可视化模型调参面板（设计师向）。
  * 按快捷键 T 显示/隐藏。
+import { API_BASE } from "../api/base.js";
  * 用滑块/输入框实时调整模型的位置、旋转、缩放。
  * 调好后一键「复制配置」粘贴到 model_transforms.json 即可固化。
  */
@@ -233,7 +234,7 @@ export function createTunerPanel(scene) {
     const rule = buildRuleForNode(currentNode);
     console.info("[tuner] 保存配置:", JSON.stringify(rule));
     try {
-      const res = await fetch("/api/save-transforms", {
+      const res = await fetch(API_BASE + "/api/save-transforms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rules: [rule] }),
@@ -258,7 +259,7 @@ export function createTunerPanel(scene) {
   $("tuner-save-all").addEventListener("click", async () => {
     const rules = getAllRules();
     try {
-      const res = await fetch("/api/save-transforms", {
+      const res = await fetch(API_BASE + "/api/save-transforms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rules }),

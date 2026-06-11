@@ -183,11 +183,11 @@ export class SceneManager {
 
     // 按优先级尝试
     const candidates = [
-      "/assets/3d/textures/env_panorama.hdr",
-      "/assets/3d/textures/environment.hdr",
-      "/assets/3d/textures/skybox.hdr",
-      "/assets/3d/textures/env_panorama.jpg",
-      "/assets/3d/textures/env_panorama.png",
+      "./assets/3d/textures/env_panorama.hdr",
+      "./assets/3d/textures/environment.hdr",
+      "./assets/3d/textures/skybox.hdr",
+      "./assets/3d/textures/env_panorama.jpg",
+      "./assets/3d/textures/env_panorama.png",
     ];
 
     let foundUrl = null;

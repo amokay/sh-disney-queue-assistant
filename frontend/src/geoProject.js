@@ -23,7 +23,7 @@ export function parseGeoReference(obj) {
 
 export async function fetchGeoReference() {
   try {
-    const res = await fetch("/assets/data/geo_reference.json");
+    const res = await fetch("./assets/data/geo_reference.json");
     if (!res.ok) return null;
     return parseGeoReference(await res.json());
   } catch {

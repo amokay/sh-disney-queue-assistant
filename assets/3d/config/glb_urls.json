@@ -1,12 +1,12 @@
 {
   "urls": [
-    "/assets/3d/models/landmarks/01_Main_castle.glb?v=2",
-    "/assets/3d/models/landmarks/02_seven-dwarfs-mine-train.glb",
-    "/assets/3d/models/landmarks/03_caribbean-pirates.glb",
-    "/assets/3d/models/landmarks/05_fantasia-carousel.glb",
-    "/assets/3d/models/ground.glb?v=2",
-    "/assets/3d/models/pool.glb",
-    "/assets/3d/models/far.glb",
-    "/assets/3d/models/02drawfpeijian.glb"
+    "./assets/3d/models/landmarks/01_Main_castle.glb?v=2",
+    "./assets/3d/models/landmarks/02_seven-dwarfs-mine-train.glb",
+    "./assets/3d/models/landmarks/03_caribbean-pirates.glb",
+    "./assets/3d/models/landmarks/05_fantasia-carousel.glb",
+    "./assets/3d/models/ground.glb?v=2",
+    "./assets/3d/models/pool.glb",
+    "./assets/3d/models/far.glb",
+    "./assets/3d/models/02drawfpeijian.glb"
   ]
 }
