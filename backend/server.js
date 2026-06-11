@@ -203,11 +203,11 @@ app.use((req, res, next) => {
   if (req.path === "/index_babylon.html" || req.path === "/index_pretrip.html" || req.path.startsWith("/src/scene3d/")) {
     res.setHeader(
       "Content-Security-Policy",
-      "default-src 'self' https://cdn.babylonjs.com; " +
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.babylonjs.com; " +
+      "default-src 'self' https://cdn.babylonjs.com https://cdn.jsdelivr.net; " +
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.babylonjs.com https://cdn.jsdelivr.net; " +
       "style-src 'self' 'unsafe-inline'; " +
       "img-src 'self' data: blob:; " +
-      "connect-src 'self' https://cdn.babylonjs.com http://localhost:* ws://localhost:*; " +
+      "connect-src 'self' https://cdn.babylonjs.com https://cdn.jsdelivr.net http://localhost:* ws://localhost:*; " +
       "worker-src 'self' blob:;"
     );
   }
