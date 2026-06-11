@@ -51,8 +51,9 @@ async function fetchGlbUrlList() {
       }
     } catch { /* continue */ }
   }
+  // GitHub Pages 子目录部署需要使用相对路径
   try {
-    const res = await fetch("/assets/3d/config/glb_urls.json");
+    const res = await fetch("./assets/3d/config/glb_urls.json");
     if (res.ok) {
       const j = await res.json();
       if (Array.isArray(j.urls)) return j.urls;
