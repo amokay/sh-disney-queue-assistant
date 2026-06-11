@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "sh-disney",
+  "name": "sh-disney-queue-assistant",
   "scripts": {
     "start": "npm --prefix backend start",
     "dev": "npm --prefix backend run dev",
