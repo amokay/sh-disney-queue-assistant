@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资源加载诊断</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #fff;
+        }
+        .test-item {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success { background: #2d5016; }
+        .error { background: #501616; }
+        .loading { background: #504516; }
+        pre {
+            background: #0f0f23;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 资源加载诊断工具</h1>
+    <div id="results"></div>
+
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(name, status, message) {
+            const div = document.createElement('div');
+            div.className = `test-item ${status}`;
+            div.innerHTML = `<strong>${name}</strong>: ${message}`;
+            results.appendChild(div);
+        }
+
+        async function testResource(name, url, type = 'fetch') {
+            try {
+                addResult(name, 'loading', '加载中...');
+                
+                if (type === 'fetch') {
+                    const response = await fetch(url);
+                    if (response.ok) {
+                        const size = response.headers.get('content-length') || 'unknown';
+                        addResult(name, 'success', `✅ 加载成功 (${size} bytes)`);
+                    } else {
+                        addResult(name, 'error', `❌ HTTP ${response.status}: ${response.statusText}`);
+                    }
+                } else if (type === 'script') {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = url;
+                        script.onload = () => {
+                            addResult(name, 'success', `✅ 脚本加载成功`);
+                            resolve();
+                        };
+                        script.onerror = () => {
+                            addResult(name, 'error', `❌ 脚本加载失败`);
+                            reject(new Error('Script load failed'));
+                        };
+                        document.head.appendChild(script);
+                    });
+                }
+            } catch (error) {
+                addResult(name, 'error', `❌ ${error.message}`);
+            }
+        }
+
+        // 测试关键资源
+        async function runDiagnostics() {
+            addResult('info', 'loading', '开始诊断...');
+            
+            // 测试Babylon.js
+            await testResource('Babylon.js Core', 'https://cdn.babylonjs.com/babylon.js', 'script');
+            await testResource('Babylon.js Loaders', 'https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js', 'script');
+            
+            // 测试CSS
+            await testResource('Styles', './src/styles-planner.css');
+            
+            // 测试JS
+            await testResource('Main Script', './src/main_new.js');
+            
+            // 测试配置文件
+            await testResource('Models Manifest', './assets/3d/config/models.manifest.json');
+            await testResource('Map Pins', './assets/3d/config/map_pins.json');
+            
+            // 测试模型文件
+            await testResource('Ground Model', './assets/3d/models/ground.glb');
+            await testResource('Castle Model', './assets/3d/models/landmarks/01_Main_castle.glb');
+            
+            addResult('complete', 'success', '诊断完成! 请查看上方结果');
+        }
+
+        runDiagnostics();
+    </script>
+</body>
+</html>
