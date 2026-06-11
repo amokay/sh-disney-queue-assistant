@@ -243,7 +243,7 @@ export function applyMaterialRulesToRoot(root, glbUrl, rules) {
  */
 export async function fetchModelMaterialRules() {
   try {
-    const res = await fetch("/assets/3d/config/model_materials.json");
+    const res = await fetch("./assets/3d/config/model_materials.json");
     if (!res.ok) return [];
     const j = await res.json();
     return Array.isArray(j.rules) ? j.rules : [];

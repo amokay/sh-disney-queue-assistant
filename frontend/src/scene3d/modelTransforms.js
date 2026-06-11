@@ -117,7 +117,7 @@ export function applyManifestEntryTransforms(root, url, entry, transformRules) {
  */
 export async function fetchModelTransformRules() {
   try {
-    const res = await fetch("/assets/3d/config/model_transforms.json");
+    const res = await fetch("./assets/3d/config/model_transforms.json");
     if (!res.ok) return [];
     const j = await res.json();
     return Array.isArray(j.rules) ? j.rules : [];
