@@ -34,17 +34,18 @@ const ROUTE_FRAGMENT_SHADER = `
   varying float vProgress;
 
   void main() {
-    // 渐变：蓝紫色 #6666FF (起点/LBS) -> 红色 #FF0000 (终点/项目)
-    vec3 startColor = vec3(0.4, 0.4, 1.0);
-    vec3 endColor = vec3(0.53, 0.22, 1.0);
+    // 渐变：深蓝色 #172554 (起点) -> 浅蓝色 #3B82F6 (终点)
+    vec3 startColor = vec3(0.09, 0.145, 0.33);  // #172554 深蓝色
+    vec3 endColor = vec3(0.23, 0.51, 0.96);     // #3B82F6 浅蓝色
     vec3 baseColor = mix(startColor, endColor, vProgress);
 
     // 流动脉冲（从起点流向终点）
     float pulse = fract(vProgress * 3.0 - uTime * 0.8);
     pulse = smoothstep(0.0, 0.3, pulse) * smoothstep(1.0, 0.7, pulse);
 
-    // 混合脉冲亮带
-    vec3 finalColor = baseColor + vec3(0.3, 0.2, 0.1) * pulse;
+    // 混合脉冲亮带（使用更亮的蓝色）
+    vec3 highlightColor = vec3(0.5, 0.7, 1.0);  // 亮蓝色高光
+    vec3 finalColor = mix(baseColor, highlightColor, pulse * 0.4);
 
     gl_FragColor = vec4(finalColor, uAlpha);
   }
