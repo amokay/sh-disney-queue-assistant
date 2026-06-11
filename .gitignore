@@ -36,3 +36,4 @@ dist
 .env.local
 .env.*.local
 .gstack/
+.vercel
