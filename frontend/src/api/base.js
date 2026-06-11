@@ -1,3 +1,5 @@
+import { PRODUCTION_API_BASE, USE_PRODUCTION_API } from "./config.js";
+
 /**
  * 所有 `/api/*` 请求共用的前缀。
  *
@@ -11,6 +13,12 @@ function inferApiBase() {
   if (protocol === "file:") return "http://localhost:3000";
   const isLocal =
     hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+  
+  // 生产环境且启用了生产 API
+  if (!isLocal && USE_PRODUCTION_API && PRODUCTION_API_BASE) {
+    return PRODUCTION_API_BASE;
+  }
+  
   if (!isLocal) return "";
   const effectivePort = port || (protocol === "https:" ? "443" : "80");
   if (effectivePort === "3000") return "";
@@ -19,9 +27,13 @@ function inferApiBase() {
 
 export const API_BASE = inferApiBase();
 
-/** 是否为 .io 静态托管（无后端 API） */
+/** 
+ * 是否为纯静态托管（无后端 API）
+ * GitHub Pages 和 Vercel 仍然尝试调用 API，失败后才降级到静态文件
+ */
 export const IS_STATIC_DEPLOY = (() => {
   if (typeof window === "undefined" || !window.location) return false;
   const h = window.location.hostname;
+  // 仅阿里内部域名使用纯静态模式
   return h.endsWith(".alibaba-inc.com") || h.endsWith(".alipay.com");
 })();

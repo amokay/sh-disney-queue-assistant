@@ -49,21 +49,32 @@ GitHub Pages通常需要2-5分钟来重新构建和部署。
 
 ## ⚠️ 常见问题
 
-### 问题1: 3D模型和贴图不显示
+### 问题1: 排队时间显示为静态数据
+**原因**: GitHub Pages/Vercel无法访问后端API
+**解决**: 
+1. 部署后端到Vercel/Railway等平台
+2. 修改 `src/api/config.js`:
+   ```javascript
+   export const PRODUCTION_API_BASE = "https://your-backend.vercel.app";
+   export const USE_PRODUCTION_API = true;
+   ```
+3. 重新部署前端
+
+### 问题2: 3D模型和贴图不显示
 **原因**: 资源路径错误
 **解决**: 
 1. 确保所有fetch路径使用相对路径 `./assets/...`
 2. 确保assets目录已同步到根目录
 3. 清除浏览器缓存(Cmd+Shift+R)
 
-### 问题2: 入口tabs没有隐藏
+### 问题3: 入口tabs没有隐藏
 **原因**: phone-frame.html未更新
 **解决**: 
 1. 确保frontend/phone-frame.html中 `.mode-tabs` 设置为 `display: none`
 2. 同步到根目录: `cp -f frontend/phone-frame.html phone-frame.html`
 3. 重新部署
 
-### 问题3: 样式不生效
+### 问题4: 样式不生效
 **原因**: CSS文件未同步
 **解决**:
 1. 确保frontend/src/styles-planner.css是最新版本
