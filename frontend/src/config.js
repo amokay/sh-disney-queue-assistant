@@ -66,8 +66,8 @@ export const DEFAULT_CAMERA_TARGET = [-10.3, -1.9, -31.8];
 
 /** @deprecated 请使用 models.manifest.json 或 AUTO_LOAD_GLBS */
 export const MODEL_PATHS = {
-  overview: "/assets/models/optimized/overview/park_overview.glb",
-  ground: "/assets/models/optimized/zones/ground.glb",
+  overview: "./assets/models/optimized/overview/park_overview.glb",
+  ground: "./assets/models/optimized/zones/ground.glb",
 };
 
 export function waitColorClass(minutes) {
