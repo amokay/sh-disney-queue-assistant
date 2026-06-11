@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Babylon.js 测试</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #1a1a2e; color: white; font-family: Arial; }
+        #renderCanvas { width: 100%; height: 100vh; touch-action: none; }
+        #info { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; }
+    </style>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+</head>
+<body>
+    <div id="info">
+        <h3>Babylon.js 测试</h3>
+        <p id="status">初始化中...</p>
+    </div>
+    <canvas id="renderCanvas"></canvas>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        
+        // 检查Babylon.js是否加载
+        if (typeof BABYLON === 'undefined') {
+            statusEl.innerHTML = '❌ Babylon.js 未加载!';
+            statusEl.style.color = '#ff4444';
+        } else {
+            statusEl.innerHTML = '✅ Babylon.js 已加载<br>版本: ' + BABYLON.Engine.Version;
+            statusEl.style.color = '#44ff44';
+            
+            // 创建场景
+            const canvas = document.getElementById("renderCanvas");
+            const engine = new BABYLON.Engine(canvas, true);
+            
+            const createScene = function () {
+                const scene = new BABYLON.Scene(engine);
+                scene.clearColor = new BABYLON.Color4(0.118, 0.251, 0.686, 1);
+                
+                // 添加相机
+                const camera = new BABYLON.ArcRotateCamera("camera", new BABYLON.Vector3(0, 5, -10), scene);
+                camera.setTarget(BABYLON.Vector3.Zero());
+                camera.attachControl(canvas, true);
+                
+                // 添加光源
+                const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+                light.intensity = 0.7;
+                
+                // 添加一个立方体
+                const box = BABYLON.MeshBuilder.CreateBox("box", { size: 2 }, scene);
+                box.position.y = 1;
+                
+                const material = new BABYLON.StandardMaterial("material", scene);
+                material.diffuseColor = new BABYLON.Color3(0.23, 0.51, 0.96);
+                box.material = material;
+                
+                // 添加地面
+                const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 20, height: 20 }, scene);
+                const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
+                groundMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.3);
+                ground.material = groundMat;
+                
+                // 旋转动画
+                scene.registerBeforeRender(() => {
+                    box.rotation.y += 0.01;
+                });
+                
+                statusEl.innerHTML += '<br>✅ 场景创建成功';
+                
+                return scene;
+            };
+            
+            const scene = createScene();
+            
+            engine.runRenderLoop(function () {
+                scene.render();
+            });
+            
+            window.addEventListener("resize", function () {
+                engine.resize();
+            });
+        }
+    </script>
+</body>
+</html>
