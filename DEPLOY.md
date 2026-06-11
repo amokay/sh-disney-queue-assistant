@@ -49,6 +49,30 @@ GitHub Pages通常需要2-5分钟来重新构建和部署。
 
 ## ⚠️ 常见问题
 
+### 问题0: 资源加载404错误 (绝对路径问题)
+**症状**: 浏览器控制台显示 `GET https://amokay.github.io/assets/xxx 404`
+
+**原因**: GitHub Pages部署在子目录 `/sh-disney-queue-assistant/` 下,使用绝对路径 `/assets/...` 会指向根域名。
+
+**解决**: 
+1. **永远使用相对路径** `./assets/...` 而不是 `/assets/...`
+2. 部署脚本会自动检查,如果发现绝对路径会阻止部署
+3. 修改示例:
+   ```javascript
+   // ❌ 错误 - 绝对路径
+   fetch("/assets/3d/config/glb_urls.json")
+   
+   // ✅ 正确 - 相对路径
+   fetch("./assets/3d/config/glb_urls.json")
+   ```
+
+**需要检查的文件**:
+- `src/scene3d/modelManifest.js`
+- `src/scene3d/vegetation.js`
+- 所有使用 `fetch()` 加载资源的文件
+
+**自动检查**: 运行 `bash check-paths.sh` 或 `bash deploy-gh-pages.sh` 会自动检测
+
 ### 问题1: 排队时间显示为静态数据
 **原因**: GitHub Pages/Vercel无法访问后端API
 **解决**: 

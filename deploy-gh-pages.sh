@@ -5,6 +5,20 @@ set -e
 
 echo "🚀 开始准备GitHub Pages部署..."
 
+# 0. 检查资源路径(防止绝对路径导致的404错误)
+echo "🔍 检查资源路径..."
+ABSOLUTE_PATHS=$(grep -r 'fetch\(["'\''']/assets/' src/ --include="*.js" --include="*.mjs" 2>/dev/null || true)
+if [ -n "$ABSOLUTE_PATHS" ]; then
+  echo "❌ 发现绝对路径引用,这会导致GitHub Pages 404错误:"
+  echo "$ABSOLUTE_PATHS"
+  echo ""
+  echo "💡 请修改为相对路径 ./assets/"
+  echo "   例如: fetch(\"./assets/3d/config/glb_urls.json\")"
+  echo ""
+  exit 1
+fi
+echo "✅ 所有资源路径都是相对路径"
+
 # 1. 确保frontend和根目录的文件同步
 echo "📦 同步frontend目录到根目录..."
 
