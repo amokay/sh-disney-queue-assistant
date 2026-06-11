@@ -2480,15 +2480,12 @@ body {
   }
 }
 
-/* 渐变流动动画 */
+/* 渐变流动动画 - 单向从左向右 */
 @keyframes gradientFlow {
   0% {
     background-position: 0% center;
   }
-  50% {
-    background-position: 100% center;
-  }
   100% {
-    background-position: 0% center;
+    background-position: 200% center;
   }
 }
