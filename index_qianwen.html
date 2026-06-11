@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>飞猪千问</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #F7F8FA;
+      font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #0F131A;
+    }
+
+    .page {
+      position: relative;
+      width: 750px;
+      height: 1624px;
+      background: #F7F8FA;
+      overflow: hidden;
+    }
+
+    /* bg-置于页面底部不动 */
+    .bg-bottom {
+      position: absolute;
+      width: 100%;
+      height: 560px;
+      left: 0;
+      bottom: 79px;
+      background: #F7F8FA;
+      transform: rotate(-180deg);
+    }
+
+    /* 背景渐变色 */
+    .bg-gradient {
+      position: absolute;
+      width: 100%;
+      height: 420px;
+      left: 0;
+      top: 140px;
+    }
+
+    /* 顶部组件 */
+    .top-bar {
+      position: absolute;
+      width: 100%;
+      height: 176px;
+      left: 0;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      z-index: 10;
+    }
+
+    /* status-bar 样式与 .planner-titlebar__statusbar 完全一致（750 设计稿下数值×2） */
+    .status-bar {
+      position: relative;
+      width: 100%;
+      height: 88px;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 32px;
+      box-sizing: border-box;
+      pointer-events: none;
+      /* 设计稿 750px@88px：时间 32.4427px / 行高 42px → 375px 视口下约 16px / 21px */
+    }
+    .status-bar__time {
+      font-family: 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      font-weight: 600;
+      font-size: 28px;
+      line-height: 42px;
+      letter-spacing: -0.4px;
+      color: #000000;
+      font-variant-numeric: tabular-nums;
+      min-width: 108px;
+      text-align: left;
+      /* 与 iOS 状态栏一致，向左收紧避开刘海区 */
+      padding-left: 12px;
+    }
+    .status-bar__icons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-right: 4px;
+    }
+    .status-bar__icon {
+      display: block;
+      flex-shrink: 0;
+    }
+    .status-bar__icon--signal { height: 22px; }
+    .status-bar__icon--wifi { height: 22px; }
+    .status-bar__icon--battery { height: 24px; }
+
+    /* 导航栏 */
+    .nav-bar {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      width: 100%;
+      height: 88px;
+      background: #F7F8FA;
+    }
+
+    .nav-bar__left {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 18px;
+      width: 114px;
+      height: 48px;
+    }
+
+    .nav-bar__center {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      width: 144px;
+      height: 50px;
+    }
+
+    .nav-bar__title {
+      width: 144px;
+      height: 50px;
+      font-weight: 500;
+      font-size: 34px;
+      line-height: 140%;
+      text-align: center;
+      color: #0F131A;
+    }
+
+    .nav-bar__right {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 18px;
+      width: 114px;
+      height: 48px;
+    }
+
+    .icon-btn {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 0;
+    }
+
+    /* 底部输入区 */
+    .bottom-input {
+      position: absolute;
+      width: 100%;
+      left: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 18px 18px 0px;
+      gap: 18px;
+      isolation: isolate;
+      z-index: 10;
+    }
+
+    .bottom-input__bg {
+      position: absolute;
+      width: 750px;
+      left: 0px;
+      top: 0%;
+      bottom: 0%;
+      background: #F7F8FA;
+      flex: none;
+      order: 0;
+      flex-grow: 0;
+      z-index: 0;
+    }
+
+    /* 功能入口 */
+    .tool-entries {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      padding: 0;
+      gap: 12px;
+      width: 714px;
+      height: 60px;
+      flex: none;
+      order: 1;
+      align-self: stretch;
+      flex-grow: 0;
+      z-index: 1;
+    }
+
+    .tool-entry {
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      padding: 12px 18px;
+      gap: 6px;
+      width: 132px;
+      height: 60px;
+      border: 1px solid rgba(15, 19, 26, 0.3);
+      border-radius: 18px;
+      flex: none;
+      order: 0;
+      flex-grow: 0;
+      cursor: pointer;
+      background: transparent;
+    }
+
+    .tool-entry__label {
+      font-weight: 500;
+      font-size: 24px;
+      line-height: 140%;
+      color: #0F131A;
+      white-space: nowrap;
+    }
+
+    /* 输入框 */
+    .input-box {
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 24px;
+      gap: 18px;
+      width: 714px;
+      height: 100px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, #FFFFFF 100%);
+      border: 2px solid #FFFFFF;
+      border-radius: 24px;
+      flex: none;
+      order: 2;
+      align-self: stretch;
+      flex-grow: 0;
+      z-index: 2;
+      cursor: text;
+    }
+
+    .input-box__left {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      padding: 0;
+      gap: 18px;
+      width: 399px;
+      height: 48px;
+      flex: none;
+      order: 0;
+      flex-grow: 0;
+    }
+
+    .input-box__voice-icon {
+      width: 48px;
+      height: 48px;
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .input-box__placeholder {
+      width: 333px;
+      height: 48px;
+      font-family: 'PingFang SC';
+      font-style: normal;
+      font-weight: 400;
+      font-size: 34px;
+      line-height: 140%;
+      text-align: center;
+      color: #919499;
+      flex: none;
+      order: 1;
+      flex-grow: 0;
+    }
+
+    .input-box__right {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      padding: 0;
+      gap: 24px;
+      width: 48px;
+      height: 48px;
+      flex: none;
+      order: 2;
+      flex-grow: 0;
+    }
+
+    .input-box__send {
+      width: 48px;
+      height: 48px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .input-box__send-circle {
+      width: 46px;
+      height: 46px;
+      background: #0F131A;
+      border-radius: 23px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .input-box__send-square {
+      width: 12px;
+      height: 12px;
+      background: #FFFFFF;
+      border-radius: 2px;
+    }
+
+    /* ===== 对话内容区 ===== */
+    .chat-content {
+      position: absolute;
+      left: 0;
+      top: 176px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 1;
+    }
+
+    /* —— 用户消息（靠右对齐） —— */
+    .chat-user-msg {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 24px 0;
+      width: 690px;
+      height: 156px;
+    }
+    .chat-user-bubble {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      padding: 30px;
+      gap: 10px;
+      width: fit-content;
+      min-width: 230px;
+      max-width: 600px;
+      height: 108px;
+      background: linear-gradient(180deg, #E4E4FF 0%, #EDEDFF 100%);
+      border-radius: 36px;
+      box-sizing: border-box;
+    }
+    .chat-user-bubble__text {
+      font-family: 'PingFang SC';
+      font-weight: 400;
+      font-size: 34px;
+      line-height: 140%;
+      color: #0F131A;
+      flex-grow: 1;
+    }
+
+    /* —— AI 纯文本回复 —— */
+    .chat-ai-text {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      width: 690px;
+    }
+    .chat-ai-text__content {
+      font-family: 'PingFang SC';
+      font-weight: 400;
+      font-size: 34px;
+      line-height: 170%;
+      color: #222222;
+      flex-grow: 1;
+    }
+
+    /* —— AI 卡片模块 —— */
+    .chat-ai-card-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 18px 0 0;
+      width: 690px;
+      border-radius: 36px;
+    }
+    .chat-ai-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 0 24px 24px;
+      width: 690px;
+      background: #FFFFFF;
+      border-radius: 36px;
+      box-sizing: border-box;
+    }
+
+    /* 订单金额行 */
+    .card-amount-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      padding: 24px 0 0;
+      gap: 12px;
+      width: 642px;
+      height: 64px;
+    }
+    .card-amount-label {
+      font-family: 'PingFang SC';
+      font-weight: 400;
+      font-size: 24px;
+      line-height: 140%;
+      color: #919499;
+    }
+    .card-amount-price {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .card-amount-currency {
+      font-family: 'PingFang SC';
+      font-weight: 400;
+      font-size: 20px;
+      line-height: 36px;
+      color: #FF5533;
+    }
+    .card-amount-value {
+      font-family: 'PingFang SC';
+      font-weight: 500;
+      font-size: 28px;
+      line-height: 40px;
+      color: #FF5533;
+    }
+
+    /* 标题行 */
+    .card-title-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      padding: 18px 0 0;
+      gap: 12px;
+      width: 642px;
+      height: 57px;
+    }
+    .card-title-tag {
+      background: #EBEBFF;
+      border-radius: 8px;
+      padding: 10px 8px;
+      font-family: 'PingFang SC';
+      font-weight: 400;
+      font-size: 22px;
+      line-height: 1;
+      color: #5C5CFF;
+    }
+    .card-title-text {
+      font-family: 'PingFang SC';
+      font-weight: 500;
+      font-size: 28px;
+      line-height: 140%;
+      color: #0F131A;
+      flex-grow: 1;
+    }
+
+    /* 标签栏 */
+    .card-tag-row {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      padding: 18px 0 0;
+      gap: 12px;
+      width: 642px;
+      height: 52px;
+    }
+    .card-tag-item {
+      font-family: 'PingFang SC';
+      font-weight: 400;
+      font-size: 24px;
+      line-height: 140%;
+      color: #0F131A;
+    }
+    .card-tag-item--cabin { width: 84px; }
+    .card-tag-item--dur { width: 72px; }
+    .card-tag-divider {
+      width: 1px;
+      height: 24px;
+      background: #D2D4D9;
+      transform: rotate(90deg);
+    }
+
+    /* 出行人区域 */
+    .card-passenger-section {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 42px 0 24px;
+      gap: 18px;
+      width: 642px;
+      height: 152px;
+      font-size: 24px;
+    }
+    .card-passenger-row {
+      display: flex;
+      flex-direction: row;
+      gap: 18px;
+      width: 642px;
+    }
+    .card-passenger-cell {
+      font-family: 'PingFang SC';
+      font-weight: 400;
+      font-size: 24px;
+      line-height: 140%;
+      color: #919499;
+    }
+    .card-passenger-cell--label { width: 91px; }
+    .card-passenger-cell--name { width: 72px; }
+    .card-passenger-cell--id { width: 221px; }
+
+    /* 行动点按钮区域 */
+    .card-actions {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      padding: 18px 0px 0px;
+      gap: 16px;
+      width: 642px;
+      height: 98px;
+      order: 10;
+    }
+    .card-action-btn {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      padding: 20px 32px;
+      gap: 8px;
+      width: 642px;
+      height: 80px;
+      background: #F2F3F5;
+      border-radius: 24px;
+      flex-grow: 1;
+      border: none;
+      cursor: pointer;
+    }
+    .card-action-btn__icon {
+      display: none;
+      width: 32px;
+      height: 32px;
+    }
+    .card-action-btn__text {
+      font-family: 'PingFang SC';
+      font-weight: 500;
+      font-size: 26px;
+      line-height: 140%;
+      color: #0F131A;
+    }
+    .card-action-btn--secondary {
+      width: 313px;
+      background: #EBEBFF;
+      mix-blend-mode: normal;
+    }
+    .card-action-btn--large {
+      width: 194px;
+      background: #F8F8F8;
+      border-radius: 20px;
+    }
+
+    /* —— AI 回答底部工具栏 —— */
+    .chat-ai-footer {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 24px 0 0;
+      gap: 18px;
+      width: 690px;
+    }
+    .chat-ai-footer__tip {
+      font-family: 'PingFang SC';
+      font-weight: 400;
+      font-size: 24px;
+      line-height: 140%;
+      color: #919499;
+    }
+    .chat-ai-footer__actions {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 12px;
+      width: 690px;
+    }
+    .chat-ai-footer__btns {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+    }
+    .chat-tool-btn {
+      width: 72px;
+      height: 72px;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #FFFFFF;
+      border: 1px solid rgba(15, 19, 26, 0.12);
+      border-radius: 24px;
+      padding: 0;
+      cursor: pointer;
+    }
+    .chat-ai-footer__status {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-end;
+      flex-grow: 1;
+      height: 72px;
+    }
+    .chat-status-pill {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      padding: 18px 24px 18px 18px;
+      gap: 12px;
+      background: #FFFFFF;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 24px;
+    }
+    .chat-status-pill__emoji {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      line-height: 1;
+    }
+    .chat-status-pill__text {
+      font-family: 'PingFang SC';
+      font-weight: 400;
+      font-size: 26px;
+      line-height: 140%;
+      color: #0F131A;
+    }
+
+    /* —— 推荐词条 —— */
+    .chat-suggest-strips {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 36px 0px 24px 0px;
+      width: 690px;
+    }
+    .suggest-strip {
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      padding: 30px 36px 30px 30px;
+      gap: 12px;
+      height: 102px;
+      background: #FFFFFF;
+      backdrop-filter: blur(2px);
+      border-radius: 36px;
+      flex: none;
+      cursor: pointer;
+    }
+    .suggest-strip__icon {
+      width: 15px;
+      height: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .suggest-strip__text {
+      font-family: 'PingFang SC';
+      font-weight: 400;
+      font-size: 30px;
+      line-height: 140%;
+      color: #0F131A;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- 底部背景 -->
+    <div class="bg-bottom"></div>
+    <!-- 背景渐变色 -->
+    <div class="bg-gradient"></div>
+
+    <!-- 顶部组件 -->
+    <div class="top-bar">
+      <!-- 状态栏 -->
+      <div class="status-bar">
+        <span class="status-bar__time" id="qianwenStatusBarTime">9:41</span>
+        <div class="status-bar__icons">
+          <svg class="status-bar__icon status-bar__icon--signal" width="34" height="22" viewBox="0 0 17 11" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="0" y="7" width="3" height="4" rx="0.8" fill="#000000"/>
+            <rect x="4.5" y="5" width="3" height="6" rx="0.8" fill="#000000"/>
+            <rect x="9" y="2.5" width="3" height="8.5" rx="0.8" fill="#000000"/>
+            <rect x="13.5" y="0" width="3" height="11" rx="0.8" fill="#000000"/>
+          </svg>
+          <svg class="status-bar__icon status-bar__icon--wifi" width="30" height="22" viewBox="0 0 15 11" fill="#000000" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M7.5 0C4.66 0 2.05 1 0 2.66l1.4 1.4C3.07 2.7 5.23 2 7.5 2s4.43 0.7 6.1 2.06L15 2.66C12.95 1 10.34 0 7.5 0z"/>
+            <path d="M7.5 4C5.62 4 3.85 4.66 2.45 5.85l1.4 1.4C4.85 6.46 6.13 6 7.5 6s2.65 0.46 3.65 1.25l1.4-1.4C11.15 4.66 9.38 4 7.5 4z"/>
+            <circle cx="7.5" cy="9.4" r="1.5"/>
+          </svg>
+          <svg class="status-bar__icon status-bar__icon--battery" width="54" height="24" viewBox="0 0 27 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="0.5" y="0.5" width="22" height="11" rx="2.6" stroke="#000000" stroke-opacity="0.55"/>
+            <rect x="2" y="2" width="19" height="8" rx="1.4" fill="#000000"/>
+            <rect x="23.5" y="4" width="1.5" height="4" rx="0.6" fill="#000000" fill-opacity="0.55"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- 导航栏 -->
+      <div class="nav-bar">
+        <div class="nav-bar__left">
+          <!-- 查看历史 icon -->
+          <button class="icon-btn" aria-label="查看历史">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M38.5 10.5C39.3284 10.5 40 11.1716 40 12C40 12.8284 39.3284 13.5 38.5 13.5H9.5C8.67157 13.5 8 12.8284 8 12C8 11.1716 8.67157 10.5 9.5 10.5H38.5Z" fill="#0F131A"/>
+              <path d="M28.5 22.5C29.3284 22.5 30 23.1716 30 24C30 24.8284 29.3284 25.5 28.5 25.5H9.5C8.67157 25.5 8 24.8284 8 24C8 23.1716 8.67157 22.5 9.5 22.5H28.5Z" fill="#0F131A"/>
+              <path d="M33.5 34.5C34.3284 34.5 35 35.1716 35 36C35 36.8284 34.3284 37.5 33.5 37.5H9.5C8.67157 37.5 8 36.8284 8 36C8 35.1716 8.67157 34.5 9.5 34.5H33.5Z" fill="#0F131A"/>
+            </svg>
+          </button>
+        </div>
+        <div class="nav-bar__center">
+          <span class="nav-bar__title">飞猪千问</span>
+        </div>
+        <div class="nav-bar__right">
+          <button class="icon-btn" aria-label="新建会话">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 7.5C24.8284 7.5 25.5 8.17157 25.5 9C25.5 9.82843 24.8284 10.5 24 10.5H12C10.067 10.5 8.5 12.067 8.5 14V38.1797L11.8076 34.6182C12.4698 33.9052 13.399 33.5 14.3721 33.5H36C37.933 33.5 39.5 31.933 39.5 30V23.5C39.5 22.6716 40.1716 22 41 22C41.8284 22 42.5 22.6716 42.5 23.5V30C42.5 33.5899 39.5899 36.5 36 36.5H14.3721C14.2331 36.5 14.1004 36.5583 14.0059 36.6602L9.83203 41.1543C8.28593 42.8193 5.5 41.7253 5.5 39.4531V14C5.5 10.4101 8.41015 7.5 12 7.5H24Z" fill="black"/>
+              <path d="M36.4541 3.99023C37.2825 3.99023 37.9541 4.66181 37.9541 5.49023V10.998H43.5C44.3284 10.998 45 11.6696 45 12.498C45 13.3265 44.3284 13.998 43.5 13.998H37.9541V19.4902C37.9541 20.3187 37.2825 20.9902 36.4541 20.9902C35.6257 20.9902 34.9541 20.3187 34.9541 19.4902V13.998H29.5C28.6716 13.998 28 13.3265 28 12.498C28 11.6696 28.6716 10.998 29.5 10.998H34.9541V5.49023C34.9541 4.66181 35.6257 3.99023 36.4541 3.99023Z" fill="black"/>
+            </svg>
+          </button>
+          <!-- 新建对话 icon -->
+          <button class="icon-btn" aria-label="新建对话">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10.4837 19.6036C9.87449 19.0423 9.83546 18.0929 10.3967 17.4837C10.958 16.8745 11.9074 16.8355 12.5166 17.3967L24.2281 28.1883L35.9395 17.3967C36.5487 16.8355 37.4981 16.8745 38.0595 17.4837C38.6207 18.0929 38.5816 19.0423 37.9724 19.6036L25.5836 31.0188L25.4351 31.1424C24.6718 31.7215 23.5905 31.6804 22.8725 31.0188L10.4837 19.6036Z" fill="#0F131A"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 对话内容区 -->
+    <div class="chat-content">
+      <!-- 1. 用户消息气泡（靠右） -->
+      <div class="chat-user-msg">
+        <div class="chat-user-bubble">
+          <span class="chat-user-bubble__text">门票已支付</span>
+        </div>
+      </div>
+
+      <!-- 2. AI 文本回复 -->
+      <div class="chat-ai-text">
+        <span class="chat-ai-text__content">好的，已为你成功预订2张2月27日的上海迪士尼度假区成人票，祝你玩得开心！</span>
+      </div>
+
+      <!-- 3. AI 卡片模块 -->
+      <div class="chat-ai-card-wrap">
+        <div class="chat-ai-card">
+          <!-- a. 订单金额 -->
+          <div class="card-amount-row">
+            <span class="card-amount-label">订单金额</span>
+            <div class="card-amount-price">
+              <span class="card-amount-currency">¥</span>
+              <span class="card-amount-value">1024</span>
+            </div>
+          </div>
+
+          <!-- b. 标题行 1 -->
+          <div class="card-title-row">
+            <span class="card-title-tag" style="display: none;">去</span>
+            <span class="card-title-text">上海迪士尼乐园-1日门票</span>
+          </div>
+
+          <!-- c. 标签栏（隐藏） -->
+          <div class="card-tag-row" style="display: none;">
+            <span class="card-tag-item">隐藏标签</span>
+          </div>
+
+          <!-- d. 标题行 2 -->
+          <div class="card-title-row">
+            <span class="card-title-text">6月20日 周六 2张</span>
+          </div>
+
+          <!-- g. 出行人区域 -->
+          <div class="card-passenger-section">
+            <div class="card-passenger-row">
+              <span class="card-passenger-cell card-passenger-cell--label">出行人1</span>
+              <span class="card-passenger-cell card-passenger-cell--name">李雷</span>
+              <span class="card-passenger-cell card-passenger-cell--id">身份证 310***1234</span>
+            </div>
+            <div class="card-passenger-row">
+              <span class="card-passenger-cell card-passenger-cell--label">出行人2</span>
+              <span class="card-passenger-cell card-passenger-cell--name">韩梅梅</span>
+              <span class="card-passenger-cell card-passenger-cell--id">身份证 310***5678</span>
+            </div>
+          </div>
+
+          <!-- h. 行动点按钮区域 -->
+          <div class="card-actions">
+            <!-- 按钮1：主按钮（可见） -->
+            <button class="card-action-btn">
+              <div class="card-action-btn__icon"></div>
+              <span class="card-action-btn__text">查看订单详情</span>
+            </button>
+            <!-- 按钮2：次要按钮（隐藏） -->
+            <button class="card-action-btn card-action-btn--secondary" style="display: none;">
+              <div class="card-action-btn__icon"></div>
+              <span class="card-action-btn__text"></span>
+            </button>
+            <!-- 按钮3：大按钮（隐藏） -->
+            <button class="card-action-btn card-action-btn--large" style="display: none;">
+              <div class="card-action-btn__icon"></div>
+              <span class="card-action-btn__text"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3.1 AI 回答底部工具栏 -->
+      <div class="chat-ai-footer">
+        <div class="chat-ai-footer__tip">回答由AI生成，内容仅供参考</div>
+        <div class="chat-ai-footer__actions">
+          <div class="chat-ai-footer__btns">
+            <button class="chat-tool-btn" aria-label="赞">
+              <svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.88948 37.9661C7.60385 37.9661 6.37087 37.4554 5.46179 36.5463C4.55271 35.6372 4.04199 34.4043 4.04199 33.1186L4.04199 20.9999C4.04199 19.7143 4.55271 18.4813 5.46179 17.5722C6.37087 16.6631 7.60385 16.1524 8.88948 16.1524L11.392 16.1524L11.5011 16.1476C12.9553 16.0118 14.7974 14.3443 15.602 12.7058C15.6457 12.6198 15.7075 12.4259 15.7826 12.1254C15.8456 11.8733 16.1062 10.705 16.0941 10.7596C16.2455 10.0955 16.3849 9.56346 16.5485 9.03872C17.5313 5.9121 19.251 4.03369 22.2322 4.03369C26.2665 4.03369 27.4856 7.91168 26.3962 14.9405L32.1077 14.9405C33.0004 14.9406 33.882 15.1378 34.6896 15.5182C35.4972 15.8986 36.2108 16.4527 36.7793 17.1409C37.3478 17.8292 37.7572 18.6345 37.9783 19.4994C38.1993 20.3642 38.2266 21.2673 38.058 22.1439L36.8801 28.2784C36.3347 31.113 35.7821 32.583 34.7835 33.996C33.8677 35.2999 32.6172 36.3328 31.1637 36.9857C29.5882 37.7007 28.0395 37.9661 25.1528 37.9661L8.88948 37.9661ZM10.1001 18.5762L8.88948 18.5762C8.24666 18.5762 7.63017 18.8315 7.17563 19.2861C6.72109 19.7406 6.46574 20.3571 6.46574 20.9999L6.46574 33.1186C6.46574 33.7614 6.7211 34.3779 7.17564 34.8325C7.63018 35.287 8.24666 35.5424 8.88948 35.5424L10.1001 35.5424L10.1001 18.5762ZM22.231 6.45744C20.5477 6.45744 19.5624 7.53358 18.862 9.76585C18.7468 10.1282 18.645 10.5051 18.5384 10.9511L18.456 11.3001C18.4754 11.2152 18.2051 12.4271 18.1336 12.7143C18.0197 13.1688 17.9155 13.4972 17.7773 13.7771C16.7594 15.8434 14.7053 17.8442 12.5263 18.4174L12.5251 35.5424L25.1516 35.5424C27.7195 35.5424 28.9375 35.3339 30.1603 34.7789C31.2219 34.3034 32.1349 33.5492 32.8021 32.5963C33.5789 31.4996 34.014 30.3422 34.4987 27.8215L35.6767 21.6858C35.7777 21.1599 35.7613 20.6181 35.6287 20.0992C35.496 19.5804 35.2503 19.0972 34.9092 18.6844C34.5681 18.2715 34.14 17.9391 33.6555 17.7108C33.171 17.4826 32.6421 17.3643 32.1065 17.3643L25.0086 17.3643C24.7979 17.3643 24.5909 17.3095 24.408 17.2051C24.225 17.1008 24.0724 16.9506 23.9652 16.7693L23.9264 16.7038C23.7776 16.4517 23.725 16.1542 23.7785 15.8664C24.9977 9.3017 24.2802 6.45744 22.2322 6.45744L22.231 6.45744Z" fill="#0F131A"/></svg>
+            </button>
+            <button class="chat-tool-btn" aria-label="踩">
+              <svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.88948 4.03391C7.60385 4.03391 6.37087 4.54462 5.46179 5.4537C4.55271 6.36278 4.04199 7.59576 4.04199 8.88139V21.0001C4.04199 22.2857 4.55271 23.5187 5.46179 24.4278C6.37087 25.3369 7.60385 25.8476 8.88948 25.8476H11.392L11.5011 25.8524C12.9553 25.9882 14.7974 27.6557 15.602 29.2942C15.6457 29.3802 15.7075 29.5741 15.7826 29.8746C15.8456 30.1267 16.1062 31.295 16.0941 31.2404C16.2455 31.9045 16.3849 32.4365 16.5485 32.9613C17.5313 36.0879 19.251 37.9663 22.2322 37.9663C26.2665 37.9663 27.4856 34.0883 26.3962 27.0595H32.1077C33.0004 27.0595 33.882 26.8622 34.6896 26.4818C35.4972 26.1014 36.2108 25.5473 36.7793 24.8591C37.3478 24.1708 37.7572 23.3655 37.9783 22.5006C38.1993 21.6358 38.2266 20.7327 38.058 19.8561L36.8801 13.7216C36.3347 10.887 35.7821 9.41704 34.7835 8.004C33.8677 6.70006 32.6172 5.66724 31.1637 5.01431C29.5882 4.2993 28.0395 4.03391 25.1528 4.03391H8.88948ZM10.1001 23.4239H8.88948C8.24666 23.4239 7.63017 23.1685 7.17563 22.714C6.72109 22.2594 6.46574 21.6429 6.46574 21.0001V8.88139C6.46574 8.23857 6.72109 7.62209 7.17563 7.16755C7.63017 6.71301 8.24666 6.45765 8.88948 6.45765H10.1001V23.4239ZM22.231 35.5426C20.5477 35.5426 19.5624 34.4664 18.862 32.2342C18.7468 31.8718 18.645 31.4949 18.5384 31.0489L18.456 30.6999C18.4754 30.7848 18.2051 29.5729 18.1336 29.2857C18.0197 28.8312 17.9155 28.5028 17.7773 28.2229C16.7594 26.1566 14.7053 24.1558 12.5263 23.5826L12.5251 6.45765H25.1516C27.7195 6.45765 28.9375 6.66609 30.1602 7.22113C31.2219 7.6966 32.1349 8.45085 32.8021 9.40371C33.5789 10.5005 34.014 11.6578 34.4988 14.1785L35.6767 20.3142C35.7777 20.8401 35.7613 21.3819 35.6287 21.9008C35.496 22.4196 35.2503 22.9028 34.9092 23.3156C34.5681 23.7285 34.14 24.061 33.6555 24.2892C33.171 24.5174 32.6421 24.6357 32.1065 24.6357H25.0086C24.7979 24.6357 24.5909 24.6905 24.408 24.7949C24.225 24.8992 24.0724 25.0494 23.9652 25.2308L23.9264 25.2962C23.7776 25.5483 23.725 25.8458 23.7785 26.1336C24.9977 32.6983 24.2802 35.5426 22.2322 35.5426H22.231Z" fill="#0F131A"/></svg>
+            </button>
+            <button class="chat-tool-btn" aria-label="分享">
+              <svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M20.6307 5.25276L20.7657 5.25C21.4769 5.25 22.1679 5.49349 22.721 5.94097L37.3434 17.7517C37.6999 18.0396 37.9884 18.4027 38.1883 18.815C38.3881 19.2274 38.4945 19.6787 38.4998 20.1369C38.5051 20.5951 38.4091 21.0488 38.2187 21.4656C38.0284 21.8824 37.7483 22.252 37.3986 22.5481L22.7762 34.9211C22.3231 35.3046 21.7698 35.5504 21.1815 35.6298C20.5933 35.7091 19.9947 35.6185 19.4562 35.3687C18.9177 35.119 18.4619 34.7204 18.1426 34.2201C17.8232 33.7198 17.6535 33.1386 17.6536 32.545V27.4271L17.4974 27.4455C13.857 27.892 10.3746 30.0917 7.03003 34.1199L6.81685 34.379C6.57031 34.6846 6.23364 34.9045 5.8548 35.0076C5.47596 35.1106 5.07426 35.0915 4.70692 34.9529C4.33958 34.8144 4.02533 34.5634 3.80893 34.2358C3.59253 33.9083 3.48501 33.5207 3.50168 33.1285C3.97213 21.7919 8.72712 15.2258 17.6334 13.8209L17.6536 13.8173V8.36211C17.6536 7.56008 17.9632 6.789 18.5178 6.20969C19.0725 5.63038 19.8294 5.28757 20.6307 5.25276ZM21.1572 7.87788C21.0657 7.80429 20.9553 7.75804 20.8387 7.74447C20.7221 7.7309 20.604 7.75055 20.4981 7.80116C20.3922 7.85177 20.3027 7.93128 20.24 8.03052C20.1773 8.12977 20.1439 8.24471 20.1437 8.36211V14.9107C20.1437 15.5483 19.6631 16.0822 19.0291 16.1493C11.2282 16.9698 6.96295 21.9205 6.11119 31.3671L6.10935 31.3873L6.24717 31.2375C10.0723 27.1027 14.208 24.9545 18.6331 24.8727L18.8996 24.87C19.5869 24.87 20.1437 25.4268 20.1437 26.115V32.5459C20.1436 32.6647 20.1774 32.781 20.2413 32.8812C20.3051 32.9813 20.3963 33.061 20.5041 33.111C20.6118 33.161 20.7316 33.179 20.8493 33.1631C20.967 33.1471 21.0776 33.0978 21.1682 33.021L35.7906 20.6479C35.8605 20.5886 35.9164 20.5147 35.9544 20.4313C35.9924 20.348 36.0116 20.2573 36.0105 20.1657C36.0095 20.0741 35.9882 19.9838 35.9483 19.9014C35.9084 19.8189 35.8508 19.7463 35.7796 19.6886L21.1572 7.87788Z" fill="#0F131A"/>
+</svg>
+            </button>
+          </div>
+          <div class="chat-ai-footer__status">
+            <div class="chat-status-pill">
+              <div class="chat-status-pill__emoji"><img src="./assets/icons/pig-avatar.png" alt="AI" style="width: 42px; height: 42px; object-fit: cover;"></div>
+              <span class="chat-status-pill__text">已完成</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. 推荐词条 -->
+      <div class="chat-suggest-strips">
+        <div class="suggest-strip">
+          <div class="suggest-strip__icon">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M9.18561 -0.000263423C9.28422 3.76199 11.28 7.21879 14.4889 9.18532C10.7267 9.28394 7.26985 11.2797 5.30332 14.4886C5.20471 10.7264 3.20892 7.26957 1.92821e-05 5.30304C3.76228 5.20443 7.21908 3.20864 9.18561 -0.000263423Z" fill="#0F131A"/>
+<path d="M9.18561 -0.000263423C9.28422 3.76199 11.28 7.21879 14.4889 9.18532C10.7267 9.28394 7.26985 11.2797 5.30332 14.4886C5.20471 10.7264 3.20892 7.26957 1.92821e-05 5.30304C3.76228 5.20443 7.21908 3.20864 9.18561 -0.000263423Z" fill="url(#paint0_linear_26884_28753)"/>
+<defs>
+<linearGradient id="paint0_linear_26884_28753" x1="1.90978e-05" y1="5.30304" x2="13.2733" y2="11.7055" gradientUnits="userSpaceOnUse">
+<stop stop-color="#6666FF"/>
+<stop offset="0.5" stop-color="#823923"/>
+<stop offset="1" stop-color="#FF8C1A"/>
+</linearGradient>
+</defs>
+</svg>
+          </div>
+          <span class="suggest-strip__text">使用上迪排队助手，实时规划更轻松</span>
+        </div>
+        <div class="suggest-strip suggest-strip--disabled" style="cursor: default;">
+          <div class="suggest-strip__icon">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M9.18561 -0.000263423C9.28422 3.76199 11.28 7.21879 14.4889 9.18532C10.7267 9.28394 7.26985 11.2797 5.30332 14.4886C5.20471 10.7264 3.20892 7.26957 1.92821e-05 5.30304C3.76228 5.20443 7.21908 3.20864 9.18561 -0.000263423Z" fill="#0F131A"/>
+<path d="M9.18561 -0.000263423C9.28422 3.76199 11.28 7.21879 14.4889 9.18532C10.7267 9.28394 7.26985 11.2797 5.30332 14.4886C5.20471 10.7264 3.20892 7.26957 1.92821e-05 5.30304C3.76228 5.20443 7.21908 3.20864 9.18561 -0.000263423Z" fill="url(#paint0_linear_26884_28753)"/>
+<defs>
+<linearGradient id="paint0_linear_26884_28753" x1="1.90978e-05" y1="5.30304" x2="13.2733" y2="11.7055" gradientUnits="userSpaceOnUse">
+<stop stop-color="#6666FF"/>
+<stop offset="0.5" stop-color="#823923"/>
+<stop offset="1" stop-color="#FF8C1A"/>
+</linearGradient>
+</defs>
+</svg>
+          </div>
+          <span class="suggest-strip__text">购买迪士尼尊享卡</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部输入区 -->
+    <div class="bottom-input">
+      <div class="bottom-input__bg"></div>
+
+      <!-- 功能入口 -->
+      <div class="tool-entries">
+        <button class="tool-entry" style="width: 132px;">
+          <span class="tool-entry__label">拍照讲解</span>
+        </button>
+        <button class="tool-entry" style="width: 108px;">
+          <span class="tool-entry__label">抄作业</span>
+        </button>
+      </div>
+
+      <!-- 输入框 -->
+      <div class="input-box">
+        <!-- 左侧：声波图标 + 占位文字 -->
+        <div class="input-box__left">
+          <div class="input-box__voice-icon">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M29.7168 39.1346C31.7043 37.147 33.2809 34.7875 34.3565 32.1907C35.4322 29.5939 35.9858 26.8107 35.9858 23.9999C35.9858 21.1891 35.4322 18.4059 34.3565 15.8091C33.2809 13.2123 31.7043 10.8527 29.7168 8.86524" stroke="black" stroke-width="3" stroke-linecap="round"/>
+              <path d="M21.9453 34.9315C23.3807 33.4961 24.5194 31.792 25.2962 29.9165C26.0731 28.041 26.4729 26.0309 26.4729 24.0009C26.4729 21.9709 26.0731 19.9608 25.2962 18.0853C24.5194 16.2098 23.3807 14.5057 21.9453 13.0703" stroke="black" stroke-width="3" stroke-linecap="round"/>
+              <path d="M15.9219 21.4336C16.0387 21.6257 16.1417 21.825 16.2314 22.0293C16.5072 22.657 16.6484 23.3273 16.6484 24.001C16.6484 24.6745 16.5072 25.3441 16.2314 25.9717C16.1418 26.1757 16.0386 26.3745 15.9219 26.5664L13.5859 24.3643C13.3768 24.1669 13.3768 23.8341 13.5859 23.6367L15.9219 21.4336Z" stroke="black" stroke-width="3"/>
+            </svg>
+          </div>
+          <span class="input-box__placeholder">发消息或者按住说话...</span>
+        </div>
+        <!-- 右侧：发送按钮 -->
+        <div class="input-box__right">
+          <div class="input-box__send">
+            <div class="input-box__send-circle">
+              <div class="input-box__send-square"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 通过 zoom 缩放 body，使 750px 设计稿适配任意宽度的 iframe / viewport
+    const DESIGN_WIDTH = 750;
+    function applyDesignScale() {
+      const vw = document.documentElement.clientWidth || window.innerWidth;
+      if (!vw) return;
+      const scale = vw / DESIGN_WIDTH;
+      document.body.style.zoom = String(scale);
+    }
+    applyDesignScale();
+    window.addEventListener('resize', applyDesignScale);
+
+    // ===== 状态栏时间：HH:MM，每分钟更新（与 planner-titlebar 一致） =====
+    const qianwenStatusTimeEl = document.getElementById('qianwenStatusBarTime');
+    const renderQianwenStatusTime = () => {
+      if (!qianwenStatusTimeEl) return;
+      const d = new Date();
+      const hh = d.getHours();
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      qianwenStatusTimeEl.textContent = `${hh}:${mm}`;
+    };
+    renderQianwenStatusTime();
+    const msToNextMin = 60000 - (Date.now() % 60000);
+    setTimeout(() => {
+      renderQianwenStatusTime();
+      setInterval(renderQianwenStatusTime, 60000);
+    }, msToNextMin);
+
+    // ===== .suggest-strip 点击跳转到行中 tab（仅未禁用的）=====
+    document.querySelectorAll('.suggest-strip:not(.suggest-strip--disabled)').forEach(strip => {
+      strip.addEventListener('click', () => {
+        try {
+          const tab = window.parent.document.querySelector('.mode-tab[data-mode="inpark"]');
+          if (tab) { tab.click(); return; }
+        } catch (e) { /* 跨域或非 iframe 环境 */ }
+        window.location.href = 'index.html';
+      });
+    });
+
+    // ===== .card-action-btn（查看订单详情）点击跳转到订详 tab =====
+    document.querySelectorAll('.card-action-btn').forEach(btn => {
+      if (btn.style.display === 'none') return;
+      btn.addEventListener('click', () => {
+        try {
+          const modeTab = window.parent.document.querySelector('.mode-tab[data-mode="entry"]');
+          if (modeTab) {
+            modeTab.click();
+            // 确保订详 tab 被选中
+            const entryTab = window.parent.document.querySelector('#entry-tabs .device-tab[data-page="entry"]');
+            if (entryTab) entryTab.click();
+            return;
+          }
+        } catch (e) { /* 跨域或非 iframe 环境 */ }
+        window.location.href = 'index_detail_entry.html';
+      });
+    });
+  </script>
+</body>
+</html>

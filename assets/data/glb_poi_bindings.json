@@ -1,0 +1,23 @@
+{
+  "bindings": [
+    {
+      "matchGlb": "Main_castle",
+      "poiQuery": "上海迪士尼乐园 奇幻童话城堡",
+      "city": "上海",
+      "keepPositionY": true
+    },
+    {
+      "matchGlb": "landmarks/02_seven-dwarfs-mine-train",
+      "poiQuery": "上海迪士尼乐园 七个小矮人矿山车",
+      "city": "上海",
+      "keepPositionY": true
+    },
+    {
+      "matchGlb": "landmarks/05_fantasia-carousel",
+      "poiQuery": "上海迪士尼乐园 幻想曲旋转木马",
+      "city": "上海",
+      "keepPositionY": true
+    }
+  ],
+  "_comment": "高德 POI → 同一次投影写 model_transforms 与 SQLite attractions（蓝球 xz / gcj 与模型对齐）。景点 id：优先 binding.attractionId，否则用 models.manifest.json 的 pickRules（与 glb 路径 match 最长者）。微调：改 model_transforms 的 position/rotation；蓝球高度改 attractions.position_y。仅改模型不写库：\"syncAttractionDb\": false。需 AMAP_WEB_KEY。"
+}

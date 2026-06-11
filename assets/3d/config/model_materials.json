@@ -1,0 +1,41 @@
+{
+  "_说明": "unlit: true = 贴图原色显示，不受灯光和反射影响。只对需要的模型开启。",
+  "rules": [
+    {
+      "_名称": "奇幻童话城堡",
+      "matchGlb": "Main_castle",
+      "applyToAllMeshes": true,
+      "props": { "unlit": true, "emissiveIntensity": 1.2 }
+    },
+    {
+      "_名称": "幻想曲旋转木马",
+      "matchGlb": "fantasia-carousel",
+      "applyToAllMeshes": true,
+      "props": { "unlit": true, "emissiveIntensity": 0.72 }
+    },
+    {
+      "_名称": "七个小矮人矿山车",
+      "matchGlb": "seven-dwarfs-mine-train",
+      "applyToAllMeshes": true,
+      "props": { "unlit": true, "emissiveIntensity": 1.2 }
+    },
+    {
+      "_名称": "加勒比海盗",
+      "matchGlb": "caribbean-pirates",
+      "applyToAllMeshes": true,
+      "props": { "unlit": true, "emissiveIntensity": 1.2 }
+    },
+    {
+      "_名称": "地面",
+      "matchGlb": "ground",
+      "applyToAllMeshes": true,
+      "props": { "unlit": true, "emissiveIntensity": 1.2 }
+    },
+    {
+      "_名称": "泳池水体",
+      "matchGlb": "pool",
+      "applyToAllMeshes": true,
+      "props": { "water": true }
+    }
+  ]
+}

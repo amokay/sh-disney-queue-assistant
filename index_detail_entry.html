@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>订单详情页</title>
+    <style>
+        /* @font-face 声明 */
+        @font-face {
+            font-family: 'Fliggy Sans 102';
+            src: url('https://g.alicdn.com/trip/common-assets/1.1.9/fonts/FliggySans102-Md.ttf') format('truetype');
+            font-weight: 500;
+            font-display: swap;
+        }
+
+        /* ========== 全局样式 ========== */
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; width: 100%; overflow-x: hidden; }
+        /* html 同步底色，避免 zoom 缩放、加载期间或可视区外 body 未覆盖区域露出 iframe 后面的黑底 */
+        html { background: #F2F3F5; }
+        body {
+            background: #F2F3F5;
+            font-family: 'PingFang SC', sans-serif;
+            min-height: 100vh;
+            /* 750 设计稿适配：通过 JS 动态设置 zoom = 视口宽 / 750
+               使 375px iframe 缩放至 0.5，1083px iframe 缩放至 1.444 */
+            zoom: 0.5;
+            transform-origin: top left;
+        }
+        a { text-decoration: none; color: inherit; }
+
+        /* ========== 组件2: 顶部状态栏 ========== */
+        .main-header {
+            position: fixed;
+            top: 0;
+            z-index: 100;
+            width: 750px;
+            height: 176px;
+            background-color: rgba(255, 255, 255, 0);
+            transition: background-color 0.3s ease-in-out;
+        }
+        .main-header.is-scrolled {
+            background-color: #FFFFFF;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        /* status-bar 样式与 .planner-titlebar__statusbar 完全一致（750 设计稿下数值×2） */
+        .status-bar {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            width: 100%;
+            height: 88px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 32px;
+            box-sizing: border-box;
+            pointer-events: none;
+            /* 设计稿 750px@88px：时间 32.4427px / 行高 42px → 375px 视口下约 16px / 21px */
+        }
+        .status-bar__time {
+            font-family: 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            font-weight: 600;
+            font-size: 28px;
+            line-height: 42px;
+            letter-spacing: -0.4px;
+            color: #000000;
+            font-variant-numeric: tabular-nums;
+            min-width: 108px;
+            text-align: left;
+            /* 与 iOS 状态栏一致，向左收紧避开刘海区 */
+            padding-left: 12px;
+        }
+        .status-bar__icons {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-right: 4px;
+        }
+        .status-bar__icon {
+            display: block;
+            flex-shrink: 0;
+        }
+        .status-bar__icon--signal { height: 22px; }
+        .status-bar__icon--wifi { height: 22px; }
+        .status-bar__icon--battery { height: 24px; }
+        .nav-bar {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 88px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            box-sizing: border-box;
+        }
+        .nav-bar__icon {
+            width: 30px; height: 30px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
+            color: #0F131A;
+            transition: color 0.3s ease-in-out;
+        }
+        .nav-bar__icon svg { width: 30px; height: 30px; fill: currentColor; }
+        .nav-bar__title {
+            position: absolute; left: 50%; top: 25%;
+            transform: translate(-50%, -50%);
+            font-size: 34px; font-weight: 500; white-space: nowrap;
+            opacity: 0; color: #0F131A;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .main-header.is-scrolled .nav-bar__title { opacity: 1; }
+        .nav-bar__actions { display: flex; align-items: center; gap: 24px; }
+
+        /* ========== 组件1: 黄头订单状态 ========== */
+        .order-result-header {
+            box-sizing: border-box;
+            display: flex; flex-direction: column;
+            justify-content: flex-end; align-items: center;
+            padding: 0px; gap: 30px;
+            width: 750px; height: 501px;
+            background: #FFE033;
+        }
+        .main-content {
+            display: flex; flex-direction: column;
+            align-items: center; padding: 0px; gap: 36px;
+            width: 750px;
+        }
+        .content-wrapper {
+            display: flex; flex-direction: column;
+            align-items: center; padding: 0px; gap: 24px;
+            width: 702px;
+        }
+        .text-area {
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: flex-start;
+            padding: 0px 12px; gap: 12px;
+            width: 702px;
+            box-sizing: border-box;
+        }
+        .status-title {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 500; font-size: 48px;
+            line-height: 140%; color: #0F131A; margin: 0;
+        }
+        .guarantee-text {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 400; font-size: 26px;
+            line-height: 140%; color: #0F131A; margin: 0;
+        }
+        .highlight-time { color: #FF5533; }
+        .button-group {
+            display: flex; flex-direction: row;
+            align-items: center; padding: 0px; gap: 18px;
+            width: 702px; height: 72px;
+        }
+        .action-button {
+            display: flex; justify-content: center; align-items: center;
+            padding: 18px 0; gap: 10px;
+            width: 222px; height: 72px;
+            background: #FFFCEB; border-radius: 100px;
+            border: none; cursor: pointer; flex-grow: 1;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 500; font-size: 30px;
+            line-height: 36px; text-align: center;
+            color: #0F131A; white-space: nowrap;
+        }
+        .white-transition {
+            width: 750px; height: 24px;
+            background: #FFFFFF;
+            border-radius: 24px 24px 0px 0px;
+        }
+
+        /* ========== 组件3: 服务保障 ========== */
+        .service-wrapper {
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: flex-start;
+            padding: 0px 24px 24px; gap: 24px;
+            width: 750px; height: 60px;
+            background: #FFFFFF; box-sizing: border-box;
+        }
+        .service-guarantee {
+            display: flex; flex-direction: row;
+            justify-content: space-between; align-items: center;
+            padding: 0px; gap: 24px;
+            width: 702px; height: 36px;
+        }
+        .guarantee__row {
+            display: flex; flex-direction: row;
+            align-items: center; padding: 0px;
+            isolation: isolate;
+            width: 702px; height: 36px;
+        }
+        .guarantee__label {
+            display: flex; flex-direction: row;
+            align-items: center; padding: 0px;
+            isolation: isolate;
+            width: 115px; height: 36px;
+            margin: 0px -6px; z-index: 1; flex-shrink: 0;
+        }
+        .guarantee__label svg { display: block; width: 116px; height: 36px; }
+        .guarantee__text-bar {
+            box-sizing: border-box;
+            display: flex; flex-direction: row;
+            align-items: center; padding: 0px 0px 0px 12px;
+            width: 325px; height: 36px;
+            background: linear-gradient(90deg, #FFF9D8 50%, rgba(255, 249, 216, 0.0001) 100%);
+            border-radius: 4px; z-index: 0; flex-grow: 1;
+        }
+        .guarantee__text {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 400; font-size: 24px;
+            line-height: 100%; color: #0F131A; white-space: nowrap;
+        }
+
+        /* ========== 组件4: 基础信息 ========== */
+        .card-wrapper {
+            display: flex; flex-direction: column;
+            align-items: flex-start;
+            padding: 0px 24px 24px;
+            width: 750px; background: #FFFFFF;
+            box-sizing: border-box;
+        }
+        .product-card {
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: flex-start;
+            width: 702px; background: #F7F8FA;
+            border-radius: 12px; padding: 18px 24px 24px;
+            box-sizing: border-box;
+        }
+        .itinerary {
+            display: flex; flex-direction: row; flex-wrap: wrap;
+            align-items: center; align-content: flex-start;
+            gap: 12px; width: 654px; color: #0F131A;
+        }
+        .itinerary__number {
+            font-family: 'Fliggy Sans 102', sans-serif;
+            font-size: 42px; font-weight: 400; line-height: 140%;
+        }
+        .itinerary__unit-month { font-size: 26px; font-weight: 500; line-height: 56px; color: #0F131A; }
+        .itinerary__unit-day { font-size: 26px; font-weight: 400; line-height: 56px; color: #0F131A; }
+        .itinerary__day, .itinerary__session { font-size: 26px; font-weight: 500; line-height: 140%; }
+        .itinerary__separator { width: 12px; height: 1px; background: #0F131A; }
+        .itinerary__note { font-size: 24px; font-weight: 400; line-height: 140%; color: #919499; }
+        .title-section {
+            display: flex; flex-direction: row;
+            justify-content: space-between; align-items: center;
+            padding: 12px 0px 0px; gap: 10px; width: 654px;
+        }
+        .title-section__text { font-size: 30px; font-weight: 500; line-height: 140%; color: #0F131A; margin: 0; }
+        .title-section__quantity { color: #3865F6; margin-left: 4px; }
+        .info-list { display: flex; flex-direction: column; width: 654px; }
+        .info-row {
+            display: flex; flex-direction: row;
+            align-items: flex-start; padding: 12px 0px 0px;
+            gap: 18px; width: 654px;
+            font-size: 26px; line-height: 140%;
+        }
+        .info-row__label { flex-shrink: 0; width: 142px; color: #919499; font-weight: 400; }
+        .info-row__value { color: #0F131A; font-weight: 400; min-width: 0; flex-grow: 1; }
+        .info-row--collapsible .info-row__value { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-link {
+            display: flex; align-items: center; gap: 4px;
+            text-decoration: none; color: #0F131A;
+            font-size: 26px; font-weight: 500; line-height: 140%;
+            white-space: nowrap; flex-shrink: 0;
+        }
+        .card-link__text { width: 52px; text-align: center; }
+        .card-link__icon { width: 28px; height: 28px; }
+
+        /* ========== 组件5: 凭证区 (scoped under .voucher-content) ========== */
+        .ticket-voucher {
+            display: flex; flex-direction: column;
+            align-items: center; padding: 0px 0px 24px;
+            width: 750px; background: #FFFFFF;
+        }
+        .voucher-content {
+            display: flex; flex-direction: column;
+            align-items: flex-start; padding: 18px 0px;
+            gap: 18px; width: 702px;
+            background: #F7F8FA; border-radius: 12px;
+        }
+        .voucher-header {
+            display: flex; flex-direction: column;
+            align-items: flex-start; padding: 0px 24px;
+            gap: 4px; width: 702px; box-sizing: border-box;
+        }
+        .header-title-wrap {
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: flex-start;
+            padding: 0px; width: 654px;
+            margin-top: 4px;
+        }
+        .header-title {
+            margin: 0; font-family: 'PingFang SC';
+            font-weight: 500; font-size: 30px;
+            line-height: 120%; color: #0F131A;
+        }
+        .voucher-content .info-row {
+            display: flex; flex-direction: row;
+            align-items: flex-start; padding: 12px 0px 0px;
+            gap: 18px; width: 654px;
+        }
+        .voucher-content .info-row__label {
+            flex-shrink: 0; width: 142px;
+            font-family: 'PingFang SC'; font-weight: 400;
+            font-size: 24px; line-height: 140%; color: #919499;
+        }
+        .voucher-content .info-row__value {
+            flex-grow: 1; font-family: 'PingFang SC';
+            font-weight: 400; font-size: 26px;
+            line-height: 140%; color: #0F131A;
+        }
+        .info-row__value--warning { font-weight: 500; color: #FF3333; }
+        .voucher-qr-section {
+            box-sizing: border-box;
+            display: flex; flex-direction: row;
+            align-items: center;
+            padding: 12px 24px; gap: 0px;
+            width: 678px;
+            margin: 0 12px;
+            background: #FFFFFF;
+            border-radius: 12px;
+        }
+        .voucher-qr-section__inner {
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            gap: 8px;
+            width: 630px;
+            border-radius: 0px 12px 12px 12px;
+        }
+        .voucher-gal-row {
+            box-sizing: border-box;
+            display: flex; flex-direction: row;
+            justify-content: center; align-items: flex-start;
+            padding: 0px 18px;
+            margin-top: 4px;
+            width: 100%;
+            min-height: 50px;
+        }
+        .voucher-gal-code {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 500; font-size: 36px;
+            line-height: 140%;
+            color: #000000;
+            margin: 0;
+        }
+        .voucher-gal-action {
+            display: flex; flex-direction: row;
+            justify-content: center; align-items: center;
+            gap: 10px;
+            width: 100%; height: 36px;
+        }
+        .voucher-gal-action__link {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 400; font-size: 24px;
+            line-height: 120%;
+            color: #6666FF;
+            text-align: right;
+            text-decoration: none;
+        }
+        .voucher-info-container {
+            display: flex; flex-direction: column;
+            align-items: center; gap: 18px;
+            width: 630px;
+        }
+        .voucher-info-section {
+            display: flex; flex-direction: column;
+            align-items: stretch;
+            width: 630px;
+        }
+        .voucher-info-header {
+            display: flex; flex-direction: row;
+            justify-content: space-between; align-items: center;
+            width: 630px; height: 36px;
+        }
+        .voucher-info-title {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 500; font-size: 26px;
+            line-height: 140%;
+            color: #0F131A;
+        }
+        .voucher-info-toggle {
+            display: flex; flex-direction: row;
+            align-items: center; gap: 4px;
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 500; font-size: 26px;
+            line-height: 140%;
+            color: #0F131A;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .voucher-info-toggle__icon {
+            width: 28px; height: 28px;
+            display: block;
+        }
+        .voucher-info-desc {
+            box-sizing: border-box;
+            display: flex; flex-direction: row;
+            align-items: center;
+            padding: 12px 0px 0px;
+            gap: 6px;
+            width: 630px;
+        }
+        .voucher-info-desc__text {
+            flex: 1;
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 400; font-size: 24px;
+            line-height: 140%;
+            color: #919499;
+        }
+        .voucher-info-desc__separator {
+            width: 1px; height: 22px;
+            background: #D9D9D9;
+            flex-shrink: 0;
+        }
+
+        /* ========== 组件6: 退改政策 ========== */
+        .info-section {
+            box-sizing: border-box;
+            display: flex; flex-direction: column;
+            align-items: flex-start; padding: 24px 0px 0px;
+            width: 750px; height: 144px;
+            background: #FFFFFF;
+        }
+        .section-header {
+            box-sizing: border-box;
+            display: flex; flex-direction: row;
+            align-items: center; padding: 0px 24px 24px;
+            gap: 6px; width: 750px; height: 66px;
+            background: #FFFFFF;
+        }
+        .section-title {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 500; font-size: 30px;
+            line-height: 140%; color: #0F131A;
+            width: 702px; margin: 0;
+        }
+        .section-details {
+            box-sizing: border-box;
+            display: flex; flex-direction: row;
+            align-items: center; padding: 0px 24px 18px;
+            gap: 30px; width: 750px; height: 54px;
+        }
+        .detail-label {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 400; font-size: 26px;
+            line-height: 140%; color: #6666FF;
+        }
+        .detail-link {
+            display: flex; align-items: center; gap: 4px;
+            cursor: pointer; margin-left: auto;
+        }
+        .detail-link__text {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 500; font-size: 26px;
+            line-height: 140%; text-align: center;
+            color: #0F131A; width: 52px;
+        }
+        .detail-link__icon {
+            width: 28px; height: 28px;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* ========== 组件7: POI卡信息 ========== */
+        .poi-card {
+            box-sizing: border-box;
+            display: flex; flex-direction: column;
+            align-items: flex-start; padding: 24px 0px 0px;
+            width: 750px; height: 192px;
+            background: #FFFFFF;
+        }
+        .poi-card__header {
+            box-sizing: border-box;
+            display: flex; flex-direction: row;
+            align-items: center; padding: 0px 24px 24px;
+            gap: 6px; width: 750px; height: 66px;
+            background: #FFFFFF;
+        }
+        .poi-card__title {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 500; font-size: 30px;
+            line-height: 140%; color: #0F131A;
+            margin: 0; flex-grow: 1;
+        }
+        .poi-card__header-link {
+            display: flex; flex-direction: row;
+            align-items: center; width: 80px; height: 36px;
+            cursor: pointer;
+        }
+        .poi-card__header-link-text {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 500; font-size: 26px;
+            line-height: 140%; text-align: center;
+            color: #0F131A; width: 52px;
+        }
+        .poi-card__icon {
+            width: 28px; height: 28px;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .poi-card__details {
+            box-sizing: border-box;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: flex-start;
+            padding: 0px 24px 18px; gap: 12px;
+            width: 750px; height: 102px;
+        }
+        .poi-card__row {
+            display: flex; flex-direction: row;
+            align-items: flex-start; gap: 18px;
+            width: 702px; height: 36px;
+        }
+        .poi-card__row-text {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 400; font-size: 26px;
+            line-height: 140%; color: #0F131A; flex-grow: 1;
+        }
+        .poi-card__phone-link {
+            display: flex; flex-direction: row;
+            justify-content: flex-end; align-items: center;
+            width: 80px; height: 36px; cursor: pointer;
+        }
+        .poi-card__phone-text {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 500; font-size: 26px;
+            line-height: 140%; text-align: right;
+            color: #6666FF; width: 52px;
+        }
+        .poi-card__address {
+            font-family: 'PingFang SC', sans-serif;
+            font-weight: 400; font-size: 26px;
+            line-height: 140%; color: #0F131A; width: 702px;
+        }
+
+        /* ========== 组件8: 订单卡 ========== */
+        .order-details {
+            box-sizing: border-box;
+            display: flex; flex-direction: column;
+            align-items: flex-start; width: 750px;
+            background: #FFFFFF; padding: 0 24px 24px;
+        }
+        .store-info {
+            display: flex; justify-content: space-between;
+            align-items: center; padding: 24px 0;
+            gap: 30px; width: 702px;
+        }
+        .store-info__left { display: flex; align-items: center; gap: 12px; }
+        .store-info__avatar {
+            width: 42px; height: 42px;
+            border-radius: 6px; border: 1px solid #D2D4D9;
+            object-fit: cover;
+        }
+        .store-info__name { font-weight: 500; font-size: 30px; line-height: 140%; color: #0F131A; }
+        .store-info__link {
+            display: flex; align-items: center; gap: 4px;
+            font-weight: 500; font-size: 26px; line-height: 140%; color: #0F131A;
+        }
+        .store-info__arrow { width: 28px; height: 28px; }
+        .product-item { display: flex; gap: 18px; width: 702px; margin-bottom: 16px; }
+        .product-item__image {
+            width: 160px; height: 160px;
+            border-radius: 12px; object-fit: cover; flex-shrink: 0;
+        }
+        .product-item__details {
+            flex-grow: 1; display: flex; flex-direction: column;
+            gap: 6px; padding-top: 4px;
+        }
+        .product-item__row { display: flex; justify-content: space-between; align-items: flex-start; gap: 30px; }
+        .product-item__name { font-weight: 400; font-size: 26px; line-height: 140%; color: #0F131A; }
+        .product-item__price { font-weight: 400; font-size: 26px; line-height: 140%; color: #0F131A; text-align: right; flex-shrink: 0; }
+        .product-item__spec, .product-item__quantity { font-weight: 400; font-size: 24px; line-height: 140%; color: #919499; }
+        .product-item__quantity { color: #0F131A; text-align: right; flex-shrink: 0; }
+        .order-details .info-list { display: flex; flex-direction: column; width: 702px; }
+        .info-item {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; padding: 16px 0; gap: 30px;
+        }
+        .info-item--center { align-items: center; }
+        .info-item__label {
+            width: 160px; font-weight: 400; font-size: 26px;
+            line-height: 140%; color: #919499;
+            flex-shrink: 0; white-space: nowrap;
+        }
+        .info-item__value { font-weight: 400; font-size: 26px; line-height: 140%; color: #0F131A; flex: 1; word-break: break-all; }
+        .info-item__value--price { display: flex; align-items: flex-end; color: #FF5533; flex: 1; }
+        .info-item__value--price .currency { font-weight: 500; font-size: 24px; line-height: 34px; }
+        .info-item__value--price .amount-integer { font-family: 'PingFang SC', sans-serif; font-weight: 700; font-size: 36px; line-height: 45px; }
+        .info-item__value--price .amount-decimal { font-family: 'PingFang SC', sans-serif; font-weight: 700; font-size: 24px; line-height: 36px; }
+        .info-item__action {
+            display: flex; align-items: center; gap: 4px;
+            flex-shrink: 0; white-space: nowrap; cursor: pointer;
+        }
+        .action-text { font-weight: 400; font-size: 24px; line-height: 140%; color: #0F131A; }
+        .action-text--blue { color: #6666FF; }
+        .action-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+        .highlight-purple { color: #6666FF; }
+        .order-details .divider { width: 100%; height: 1px; background-color: #F2F3F5; margin: 0; border: none; }
+        .toggle-button {
+            display: flex; justify-content: center; align-items: center;
+            gap: 12px; padding-top: 24px; width: 702px; cursor: pointer;
+        }
+        .toggle-button__text { font-weight: 500; font-size: 26px; line-height: 140%; color: #0F131A; }
+        .toggle-button__icon { width: 12px; height: 7px; }
+
+        /* ========== 组件9: 出行信息 (scoped under .info-card) ========== */
+        .info-card {
+            box-sizing: border-box; width: 750px; height: 234px;
+            background: #FFFFFF; padding: 24px 0px 0px;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+        .card-header-wrap {
+            display: flex; flex-direction: row;
+            align-items: center; padding: 0px 24px 24px;
+            gap: 6px; width: 750px; height: 66px;
+            background: #FFFFFF; box-sizing: border-box;
+        }
+        .card-header {
+            margin: 0; font-family: 'PingFang SC';
+            font-weight: 500; font-size: 30px;
+            line-height: 140%; color: #0F131A; width: 702px;
+        }
+        .info-card .info-list { display: flex; flex-direction: column; width: 702px; }
+        .info-card .info-row {
+            display: flex; flex-direction: row;
+            justify-content: space-between; align-items: flex-start;
+            padding: 12px 0px; gap: 30px;
+            width: 702px; height: 72px; box-sizing: border-box;
+        }
+        .info-card .info-row__label {
+            width: 160px; flex-shrink: 0;
+            font-family: 'PingFang SC'; font-weight: 400;
+            font-size: 26px; line-height: 140%; color: #919499;
+        }
+        .info-card .info-row__value {
+            flex: 1; font-family: 'PingFang SC';
+            font-weight: 400; font-size: 26px;
+            line-height: 140%; color: #0F131A;
+        }
+
+        /* ========== 组件10: 二销模块 ========== */
+        .recommendations {
+            box-sizing: border-box;
+            display: flex; flex-direction: column;
+            width: 750px; background: #FFFFFF; padding-top: 24px;
+        }
+        .recommendations__header { padding: 0 24px 24px; }
+        .recommendations__title { font-weight: 500; font-size: 30px; line-height: 140%; color: #0F131A; margin: 0; }
+        .recommendations__scroll-container {
+            overflow-x: auto; padding-bottom: 24px;
+            -ms-overflow-style: none; scrollbar-width: none;
+        }
+        .recommendations__scroll-container::-webkit-scrollbar { display: none; }
+        .recommendations__list {
+            display: flex; flex-direction: row; gap: 12px;
+            padding: 0 18px; margin: 0; list-style: none;
+        }
+        .product-card-small { display: flex; flex-direction: column; width: 230px; flex-shrink: 0; }
+        .card__image { position: relative; width: 230px; height: 230px; border-radius: 6px; overflow: hidden; }
+        .card__image img { width: 100%; height: 100%; object-fit: cover; }
+        .card__image-badge {
+            position: absolute; top: 0; left: 0;
+            background: rgba(0, 0, 0, 0.7); border-radius: 6px 0px;
+            padding: 6px; font-weight: 500; font-size: 20px;
+            color: #FFFFFF; line-height: 1;
+        }
+        .card__info { display: flex; flex-direction: column; padding-top: 6px; }
+        .card__name {
+            font-weight: 500; font-size: 28px; line-height: 39px;
+            color: #0F131A; margin: 0; height: 78px;
+            overflow: hidden; text-overflow: ellipsis;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        }
+        .card__tags { display: flex; gap: 6px; padding: 12px 0 0; }
+        .tag {
+            box-sizing: border-box;
+            display: flex; justify-content: center; align-items: center;
+            padding: 0 6px; height: 28px;
+            border: 1px solid rgba(102, 102, 255, 0.5);
+            border-radius: 4px; font-size: 20px; line-height: 1; color: #6666FF;
+        }
+        .card__pricing { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 12px; }
+        .price { display: flex; align-items: flex-end; gap: 2px; color: #FF5533; }
+        .price .currency { font-weight: 500; font-size: 24px; line-height: 1; transform: translateY(-2px); }
+        .price .amount-integer { font-family: 'PingFang SC', sans-serif; font-weight: 700; font-size: 36px; line-height: 1; }
+        .price .amount-decimal { font-family: 'PingFang SC', sans-serif; font-weight: 700; font-size: 24px; line-height: 1; }
+        .sales-count { font-size: 20px; line-height: 140%; color: #919499; }
+
+        /* ========== 组件11: 底部bar ========== */
+        .bottom-action-bar {
+            box-sizing: border-box;
+            position: fixed; left: 0; bottom: 0;
+            width: 750px; background: #FFFFFF;
+            border-top: 1px solid #F2F3F5;
+            display: flex; justify-content: space-around; align-items: center;
+            height: 175px; z-index: 100;
+            padding-bottom: constant(safe-area-inset-bottom);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .action-item { display: flex; align-items: center; gap: 13px; }
+        .action-item__icon { width: 58px; height: 58px; display: flex; justify-content: center; align-items: center; }
+        .action-item__text-block { display: flex; flex-direction: column; }
+        .action-item__title { font-size: 28px; line-height: 1.4; color: #0F131A; }
+        .action-item__subtitle { font-size: 22px; line-height: 1.4; color: #919499; }
+        .bottom-action-bar .divider { height: 65px; border-left: 1px solid #F2F3F5; }
+    </style>
+</head>
+<body>
+
+    <!-- 固定层：顶部状态栏 (组件2) -->
+    <header class="main-header" id="mainHeader">
+        <div class="status-bar">
+            <span class="status-bar__time" id="detailEntryStatusBarTime">9:41</span>
+            <div class="status-bar__icons">
+                <svg class="status-bar__icon status-bar__icon--signal" width="34" height="22" viewBox="0 0 17 11" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <rect x="0" y="7" width="3" height="4" rx="0.8" fill="#000000"/>
+                    <rect x="4.5" y="5" width="3" height="6" rx="0.8" fill="#000000"/>
+                    <rect x="9" y="2.5" width="3" height="8.5" rx="0.8" fill="#000000"/>
+                    <rect x="13.5" y="0" width="3" height="11" rx="0.8" fill="#000000"/>
+                </svg>
+                <svg class="status-bar__icon status-bar__icon--wifi" width="30" height="22" viewBox="0 0 15 11" fill="#000000" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M7.5 0C4.66 0 2.05 1 0 2.66l1.4 1.4C3.07 2.7 5.23 2 7.5 2s4.43 0.7 6.1 2.06L15 2.66C12.95 1 10.34 0 7.5 0z"/>
+                    <path d="M7.5 4C5.62 4 3.85 4.66 2.45 5.85l1.4 1.4C4.85 6.46 6.13 6 7.5 6s2.65 0.46 3.65 1.25l1.4-1.4C11.15 4.66 9.38 4 7.5 4z"/>
+                    <circle cx="7.5" cy="9.4" r="1.5"/>
+                </svg>
+                <svg class="status-bar__icon status-bar__icon--battery" width="54" height="24" viewBox="0 0 27 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <rect x="0.5" y="0.5" width="22" height="11" rx="2.6" stroke="#000000" stroke-opacity="0.55"/>
+                    <rect x="2" y="2" width="19" height="8" rx="1.4" fill="#000000"/>
+                    <rect x="23.5" y="4" width="1.5" height="4" rx="0.6" fill="#000000" fill-opacity="0.55"/>
+                </svg>
+            </div>
+        </div>
+        <nav class="nav-bar">
+            <a href="#" class="nav-bar__icon"><svg width="19" height="35" viewBox="0 0 19 35" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18.5607 32.4393C19.1464 33.0251 19.1464 33.9749 18.5607 34.5607C17.9749 35.1464 17.0251 35.1464 16.4393 34.5607L0.43934 18.5607C-0.146447 17.9749 -0.146447 17.0251 0.43934 16.4393L16.4393 0.439339C17.0251 -0.146446 17.9749 -0.146446 18.5607 0.439339C19.1464 1.02512 19.1464 1.97488 18.5607 2.56066L3.62132 17.5L18.5607 32.4393Z" fill="#292C33"/></svg></a>
+            <h1 class="nav-bar__title">订单详情</h1>
+            <div class="nav-bar__actions">
+                <a href="#" class="nav-bar__icon"><svg viewBox="0 0 24 24"><path d="M12 8C13.1 8 14 7.1 14 6C14 4.9 13.1 4 12 4C10.9 4 10 4.9 10 6C10 7.1 10.9 8 12 8ZM12 10C10.9 10 10 10.9 10 12C10 13.1 10.9 14 12 14C13.1 14 14 13.1 14 12C14 10.9 13.1 10 12 10ZM12 16C10.9 16 10 16.9 10 18C10 19.1 10.9 20 12 20C13.1 20 14 19.1 14 18C14 16.9 13.1 16 12 16Z" fill="currentColor"/></svg></a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 滚动内容区 -->
+    <main style="padding-bottom: 175px;">
+
+        <!-- 组件1: 黄头订单状态 -->
+        <header class="order-result-header">
+            <div class="main-content">
+                <div class="content-wrapper">
+                    <div class="text-area">
+                        <h1 class="status-title">已出票</h1>
+                        <p class="guarantee-text">请于当日开园后使用，祝你游玩愉快！</p>
+                    </div>
+                    <div class="button-group">
+                        <button class="action-button">申请退款</button>
+                        <button class="action-button">发票/报销</button>
+                        <button class="action-button">再次预订</button>
+                    </div>
+                </div>
+            </div>
+            <div class="white-transition"></div>
+        </header>
+
+        <!-- 组件3: 服务保障 -->
+        <div class="service-wrapper">
+            <section class="service-guarantee">
+                <div class="guarantee__row">
+                    <div class="guarantee__label">
+                        <svg width="108" height="32" viewBox="0 0 116 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="115.715" height="36.0002" rx="5.14286" fill="#FFE033"/>
+                            <path d="M17.2109 5.25195L16.4668 9.96777H18.9521L18.5332 12.6201H16.0479L15.5332 15.6338L16.3145 15.04L18.6611 18.1953C19.2712 16.4156 19.7216 14.6323 19.9277 13.1729L20.6045 8.87793H18.7227L19.125 6.32715H32.5557L32.166 8.73828L29.4951 13.0664H32.7969L32.3975 15.5703C30.9596 18.5116 29.2244 21.0118 27.0859 23.2305C28.2876 24.9583 29.8612 26.7441 31.7627 28.5381L31.9307 28.6963L29.7725 30.8574L29.7002 30.7871C27.9768 29.115 26.1861 26.9981 25.0273 25.2627C23.2629 26.8652 20.5924 28.8879 17.8848 30.6729L17.7324 30.7734L16.1191 28.6758L16.3271 28.5342C18.9845 26.7143 21.4395 24.8018 23.4258 23.0039C22.7966 21.8093 22.1428 20.1219 21.6328 18.375C20.633 21.5953 18.6767 25.2495 16.125 28.665L16.0713 28.7363C15.9209 28.9369 15.7685 29.1372 15.6143 29.3359L15.498 29.4854L13.5303 28.5771L13.2432 30.3945H10.5068L10.5254 30.2764L12.1768 19.8135L11.9619 20.1924C11.4102 21.1671 10.7882 22.2678 10.1348 23.2207L10.0156 23.3945L7.71387 22.1396L7.84863 21.9551C10.1134 18.8545 11.8919 15.7135 13.1328 12.6201H10.2246L10.6426 9.96777H13.7305L14.4746 5.25195H17.2109ZM13.7773 27.0107C15.9382 24.128 17.4723 21.4452 18.4678 18.8105L16.6074 20.2715L15.1357 18.4043L13.7773 27.0107ZM23.3359 8.87793L23.0342 10.791C23.1928 14.3145 24.0528 17.6571 25.5928 20.7383C26.9519 19.3654 28.3026 17.538 29.2979 15.7246H25.875L26.2803 13.207L28.8516 8.87793H23.3359Z" fill="#212121"/>
+                            <path d="M53.7324 5.14282L53.3682 7.45044H60.209C59.9735 8.94139 58.6927 10.0393 57.1885 10.0393H52.96L52.8115 10.9778C57.0987 11.1997 59.0697 12.5922 58.6699 15.1272C58.2698 17.6625 55.8594 19.0557 51.502 19.2776L51.2822 20.6682L52.5215 19.7913L57.8428 23.8352L55.8955 25.5725L51.0732 21.9905L50.2949 26.926H47.5898L48.4053 21.7551C46.6885 23.1589 44.2546 24.4499 41.7793 25.5969L41.6162 25.6731L40.2754 23.6995L40.5049 23.5862C43.3422 22.2514 45.8036 20.7656 47.3223 19.3098H46.2764L46.6973 16.6438H49.2119L49.6797 13.5774C47.4195 13.8045 46.1622 14.7125 45.9453 16.0872L45.8418 16.7454L45.4326 19.3381H42.7764L43.1855 16.7454L43.2891 16.0872L44.0137 11.4954H46.6699L46.6113 11.8684C47.5126 11.4466 48.6558 11.1326 50.1016 11.0071L50.2549 10.0393H43.3008L43.709 7.45044H50.6631L51.0273 5.14282H53.7324ZM51.9229 16.6116C53.1693 16.5455 54.1662 16.3782 54.8945 16.1106C55.9172 15.7348 55.9802 15.3402 56.0137 15.1282C56.0476 14.9135 56.1102 14.3084 55.1738 13.929C54.53 13.6681 53.606 13.5386 52.3906 13.5413L51.9229 16.6116Z" fill="#212121"/>
+                            <path d="M42.8725 10.4736C42.8296 10.3512 41.8038 7.45196 40.3091 5.15796L37.9082 6.8921C39.2537 8.95662 40.2251 11.6975 40.2347 11.7246L42.8725 10.4736Z" fill="#212121"/>
+                            <path d="M43.7723 27.3802C40.8604 27.251 39.6303 25.1311 39.6523 22.9642C40.4125 21.1362 40.9697 19.1935 41.2833 17.205C41.8152 13.835 40.2006 12.1265 36.4845 12.1265L36.0505 14.8768C38.4825 14.8768 38.7919 15.6276 38.5428 17.205C37.8442 21.6329 35.7124 25.9325 32.8398 28.7066L34.6096 30.5244C35.7581 29.415 36.7919 28.1293 37.6936 26.72C38.702 28.6824 40.6736 29.942 43.2329 30.0556C43.7439 30.0784 45.1571 30.0864 47.0077 30.0864C49.1067 30.0864 51.7683 30.0761 54.3137 30.0649C55.3509 30.0604 56.14 30.0569 56.4727 30.0569L56.8955 27.379C56.561 27.379 55.7675 27.3824 54.7244 27.387C51.2877 27.4017 44.8898 27.4298 43.7723 27.3802V27.3802Z" fill="#212121"/>
+                            <path d="M67.8467 6.67809L70.273 11.9125C68.116 17.9508 63.1372 24.6284 58.2461 27.9828L59.8238 30.5873C64.578 27.3268 69.2411 21.5735 72.0437 15.7329L78.9284 30.5863L81.7664 29.2193L70.6847 5.31104L67.8467 6.67809Z" fill="#212121"/>
+                            <path d="M88.5123 7.91162L88.6978 7.8042C90.365 6.83602 92.4008 6.34424 94.7486 6.34424L104.957 6.34033H104.958C105.848 6.34033 106.691 6.72952 107.27 7.40771C107.847 8.08442 108.1 8.97732 107.963 9.85693L105.221 27.4868L105.183 27.731C104.948 29.2203 103.684 30.3013 102.178 30.3013H85.8873C84.996 30.3013 84.1527 29.9119 83.5738 29.2329C82.9968 28.556 82.7451 27.6632 82.8824 26.7837L85.0709 12.7534L86.0767 6.30811L88.7632 6.30225L88.5123 7.91162ZM94.2906 9.0376C92.0458 9.0376 90.1598 9.60029 88.981 10.6216C88.3067 11.2058 87.886 11.9264 87.7642 12.7046L85.7222 25.7905C85.6513 26.2443 85.782 26.7048 86.0796 27.0542C86.3784 27.4045 86.8133 27.606 87.273 27.606H101.163C101.941 27.606 102.593 27.0469 102.713 26.2769L105.121 10.853C105.191 10.3992 105.061 9.93783 104.763 9.58838C104.465 9.23815 104.03 9.03763 103.57 9.0376H94.2906Z" fill="#212121"/>
+                            <path d="M88.6872 15.5479L88.3169 17.9239H91.2783L91.2516 18.0482C90.6265 20.9556 89.312 23.0389 86.8633 24.997L88.3288 26.9797C91.433 24.5007 93.1633 21.7289 93.9341 18.0057L93.9508 17.9239H95.9966L95.9702 18.048C95.7622 19.019 95.5863 19.9554 95.432 20.9106L95.3781 21.271C95.2422 22.1754 95.1016 23.1107 95.1051 24.0516C95.1541 24.9638 95.495 25.6859 96.1182 26.1928C97.202 27.0328 98.8859 26.9719 100.213 26.0425C101.109 25.407 101.598 24.5128 101.852 23.8746C102.094 23.2608 102.241 22.6382 102.31 21.9237C101.925 21.9063 100.617 21.847 100.294 21.8327C100.27 21.8944 100.245 21.9596 100.219 22.0273C99.9092 22.8394 99.485 23.9513 98.6826 24.0853C98.6599 24.0885 98.2114 24.1433 98.0549 23.9647C97.9641 23.8982 97.8853 23.607 97.9063 23.5C97.9827 22.4325 98.249 20.7956 98.4838 19.3516C98.5606 18.8793 98.6348 18.4243 98.6985 18.0108L98.712 17.9239H100.455C101.834 17.9239 103.008 16.9157 103.221 15.5479V15.5479H88.6872Z" fill="#212121"/>
+                            <path d="M90.4806 10.9436L90.1104 13.3196H100.077C101.457 13.3196 102.631 12.3115 102.844 10.9436H90.4806Z" fill="#212121"/>
+                        </svg>
+                    </div>
+                    <div class="guarantee__text-bar">
+                        <span class="guarantee__text">10秒出票·出票即用·无需取票</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 组件4: 基础信息 -->
+        <div class="card-wrapper">
+            <div class="product-card">
+                <div class="itinerary">
+                    <span class="itinerary__number">6</span><span class="itinerary__unit-month">月</span><span class="itinerary__number">21</span><span class="itinerary__unit-day">日</span>
+                    <span class="itinerary__day">周六入园</span>
+                    <span class="itinerary__number">9:00</span><span class="itinerary__separator"></span><span class="itinerary__number">23:59</span>
+                    <span class="itinerary__session">场次</span>
+                    <span class="itinerary__note">当地时间</span>
+                </div>
+                <div class="title-section">
+                    <h3 class="title-section__text">上海迪士尼乐园-1日门票成人票<span class="title-section__quantity">×1张</span></h3>
+                    <a href="#" class="card-link">须知<svg class="card-link__icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.2322 13.3627C17.5638 13.6895 17.5874 14.2049 17.3033 14.5587L17.2322 14.6373L12.0607 19.736C11.7036 20.088 11.1248 20.088 10.7678 19.736C10.4362 19.4092 10.4126 18.8937 10.6967 18.54L10.7678 18.4613L15.2929 14L10.7678 9.53866C10.4362 9.21181 10.4126 8.69639 10.6967 8.34261L10.7678 8.26399C11.0993 7.93714 11.6221 7.9138 11.9809 8.19395L12.0607 8.26399L17.2322 13.3627Z" fill="#0F131A"/></svg></a>
+                </div>
+                <div class="info-list">
+                    <div class="info-row"><span class="info-row__label">有效期</span><span class="info-row__value">使用日期的当日有效</span></div>
+                    <div class="info-row"><span class="info-row__label">入园地址</span><span class="info-row__value">上海市浦东新区迪士尼路1号</span></div>
+                    <div class="info-row info-row--collapsible">
+                        <span class="info-row__label">费用包含</span>
+                        <span class="info-row__value">门票为指定单标准票，仅限购票人本人使用，不可转赠、转售</span>
+                        <a href="#" class="card-link">详情<svg class="card-link__icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.6373 17.2322C14.3105 17.5638 13.7951 17.5874 13.4413 17.3033L13.3627 17.2322L8.26399 12.0607C7.912 11.7036 7.912 11.1248 8.26399 10.7678C8.59084 10.4362 9.10626 10.4126 9.46005 10.6967L9.53866 10.7678L14 15.2929L18.4613 10.7678C18.7882 10.4362 19.3036 10.4126 19.6574 10.6967L19.736 10.7678C20.0629 11.0993 20.0862 11.6221 19.806 11.9809L19.736 12.0607L14.6373 17.2322Z" fill="#0F131A"/></svg></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 组件5: 凭证区 -->
+        <div class="ticket-voucher">
+            <div class="voucher-content">
+                <div class="voucher-header">
+                    <div class="header-title-wrap"><h3 class="header-title">凭证信息</h3></div>
+                    <div class="info-row"><span class="info-row__label">使用方式</span><span class="info-row__value info-row__value--warning">凭<span style="color: #FF0000;">身份证（必带）</span>直接入园</span></div>
+                    <div class="info-row"><span class="info-row__label">出行人</span><span class="info-row__value">李雷 123456********7890</span></div>
+                </div>
+                <div class="voucher-qr-section">
+                    <div class="voucher-qr-section__inner">
+                        <div class="voucher-gal-row">
+                            <span class="voucher-gal-code">GAL1234567890123456</span>
+                        </div>
+                        <div class="voucher-gal-action">
+                            <a href="#" class="voucher-gal-action__link">复制GAL码<span style="color: #919499;">｜</span>查看入园注意事项</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="voucher-content" style="margin-top: 18px; background: url('src/sources/detail-entryBG.png') center/cover no-repeat; border: 2px solid #fff; flex-direction: row; align-items: center; justify-content: space-between;">
+                <div class="voucher-header" style="width: auto; flex: 1; min-width: 0; gap: 0px;">
+                    <div class="header-title-wrap" style="width: auto; padding-top: 2px;"><h3 class="header-title" style="background: linear-gradient(to right, #0F131A, #6666FF); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">园区内实时规划游玩路线</h3></div>
+                    <div class="info-row__label" style="width: auto; padding-top: 6px; color:#0F131A;">平均节约2-3小时排队时间</div>
+                </div>
+                <a href="javascript:void(0)" onclick="try{window.parent.document.querySelector('.mode-tab[data-mode=inpark]').click();}catch(e){}" style="display: flex; flex-direction: row; justify-content: center; align-items: center; padding: 0px 30px; gap: 10px; width: 120px; height: 60px; background: #6666FF; box-shadow: 0px 0px 24px rgba(255,255,255,0.7); border-radius: 100px; flex: none; flex-grow: 0; text-decoration: none; box-sizing: border-box; margin-right: 18px;">
+                    <span style="font-family: 'PingFang SC'; font-weight: 500; font-size: 24px; line-height: 140%; color: #FFFFFF; white-space: nowrap;">详情</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 组件6: 退改政策 -->
+        <section class="info-section" style="margin-top: 18px;">
+            <header class="section-header"><h3 class="section-title">退款政策</h3></header>
+            <div class="section-details">
+                <span class="detail-label">未办理全额退</span>
+                <a href="#" class="detail-link">
+                    <span class="detail-link__text">展开</span>
+                    <div class="detail-link__icon"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.6373 17.2322C14.3105 17.5638 13.7951 17.5874 13.4413 17.3033L13.3627 17.2322L8.26399 12.0607C7.912 11.7036 7.912 11.1248 8.26399 10.7678C8.59084 10.4362 9.10626 10.4126 9.46005 10.6967L9.53866 10.7678L14 15.2929L18.4613 10.7678C18.7882 10.4362 19.3036 10.4126 19.6574 10.6967L19.736 10.7678C20.0629 11.0993 20.0862 11.6221 19.806 11.9809L19.736 12.0607L14.6373 17.2322Z" fill="#0F131A"/></svg></div>
+                </a>
+            </div>
+        </section>
+        <!-- 组件8: 订单卡 -->
+        <section class="order-details" style="margin-top: 18px;">
+            <header class="store-info">
+                <div class="store-info__left">
+                    <span class="store-info__name">新好游旅行旗舰店</span>
+                </div>
+                <a href="#" class="store-info__link"><span>进店</span><svg class="store-info__arrow" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.2322 13.3627C17.5638 13.6895 17.5874 14.2049 17.3033 14.5587L17.2322 14.6373L12.0607 19.736C11.7036 20.088 11.1248 20.088 10.7678 19.736C10.4362 19.4092 10.4126 18.8937 10.6967 18.54L10.7678 18.4613L15.2929 14L10.7678 9.53866C10.4362 9.21181 10.4126 8.69639 10.6967 8.34261L10.7678 8.26399C11.0993 7.93714 11.6221 7.9138 11.9809 8.19395L12.0607 8.26399L17.2322 13.3627Z" fill="#0F131A"/></svg></a>
+            </header>
+            <div class="product-item">
+                <img src="https://images.unsplash.com/photo-1597466599360-3b9775841aec?w=320&h=320&fit=crop" alt="上海迪士尼" class="product-item__image">
+                <div class="product-item__details">
+                    <div class="product-item__row"><span class="product-item__name">上海迪士尼乐园-1日门票</span><span class="product-item__price">¥568.00</span></div>
+                    <div class="product-item__row"><span class="product-item__spec">成人1日票</span><span class="product-item__quantity">×1</span></div>
+                </div>
+            </div>
+            <div class="info-list">
+                <div class="info-item info-item--center">
+                    <span class="info-item__label">实付金额</span>
+                    <div class="info-item__value--price"><span class="currency">¥</span><span class="amount-integer">568</span><span class="amount-decimal">.76</span></div>
+                    <a href="#" class="info-item__action"><span class="action-text">明细</span><svg class="action-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.2322 13.3627C17.5638 13.6895 17.5874 14.2049 17.3033 14.5587L17.2322 14.6373L12.0607 19.736C11.7036 20.088 11.1248 20.088 10.7678 19.736C10.4362 19.4092 10.4126 18.8937 10.6967 18.54L10.7678 18.4613L15.2929 14L10.7678 9.53866C10.4362 9.21181 10.4126 8.69639 10.6967 8.34261L10.7678 8.26399C11.0993 7.93714 11.6221 7.9138 11.9809 8.19395L12.0607 8.26399L17.2322 13.3627Z" fill="#0F131A"/></svg></a>
+                </div>
+                <div class="info-item">
+                    <span class="info-item__label">服务保障</span><span class="info-item__value">使用保障</span>
+                    <a href="#" class="info-item__action"><span class="action-text">保障中</span><svg class="action-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.2322 13.3627C17.5638 13.6895 17.5874 14.2049 17.3033 14.5587L17.2322 14.6373L12.0607 19.736C11.7036 20.088 11.1248 20.088 10.7678 19.736C10.4362 19.4092 10.4126 18.8937 10.6967 18.54L10.7678 18.4613L15.2929 14L10.7678 9.53866C10.4362 9.21181 10.4126 8.69639 10.6967 8.34261L10.7678 8.26399C11.0993 7.93714 11.6221 7.9138 11.9809 8.19395L12.0607 8.26399L17.2322 13.3627Z" fill="#0F131A"/></svg></a>
+                </div>
+                <hr class="divider" />
+                <div class="info-item">
+                    <span class="info-item__label">订单号</span><span class="info-item__value">358244354930874727738</span>
+                    <a href="#" class="info-item__action"><span class="action-text action-text--blue">复制</span><svg class="action-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20.002 9.49988C19.5877 9.49988 19.252 9.83566 19.252 10.2499C19.252 10.6641 19.5877 10.9999 20.002 10.9999H21.752C21.89 10.9999 22.002 11.1118 22.002 11.2499V21.7499C22.002 21.888 21.89 21.9999 21.752 21.9999H11.252C11.1139 21.9999 11.002 21.888 11.002 21.7499V19.9999C11.002 19.5857 10.6662 19.2499 10.252 19.2499C9.83774 19.2499 9.50195 19.5857 9.50195 19.9999V21.7499C9.50195 22.7164 10.2855 23.4999 11.252 23.4999H21.752C22.7185 23.4999 23.502 22.7164 23.502 21.7499V11.2499C23.502 10.2834 22.7185 9.49988 21.752 9.49988H20.002ZM6.25195 4.49988C5.28545 4.49988 4.50195 5.28338 4.50195 6.24988V16.7499C4.50195 17.7164 5.28545 18.4999 6.25195 18.4999H16.752C17.7185 18.4999 18.502 17.7164 18.502 16.7499L18.502 6.24988C18.502 5.28338 17.7185 4.49988 16.752 4.49988L6.25195 4.49988ZM16.752 5.99988C16.89 5.99988 17.002 6.11181 17.002 6.24988L17.002 16.7499C17.002 16.8879 16.89 16.9999 16.752 16.9999H6.25195C6.11388 16.9999 6.00195 16.8879 6.00195 16.7499V6.24988C6.00195 6.11181 6.11388 5.99988 6.25195 5.99988L16.752 5.99988Z" fill="#6666FF"/></svg></a>
+                </div>
+                <div class="info-item"><span class="info-item__label">下单时间</span><span class="info-item__value">2026年6月09日 17:45:33</span></div>
+                <div class="info-item"><span class="info-item__label">支付宝交易号</span><span class="info-item__value">5493087472773854930874727738</span></div>
+            </div>
+            <div class="toggle-button">
+                <span class="toggle-button__text">收起</span>
+                <svg class="toggle-button__icon" viewBox="0 0 12 7" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.63733 0.267767C6.31049 -0.063754 5.79507 -0.0874341 5.44128 0.196727L5.36267 0.267767L0.263992 5.43934C-0.0879976 5.79636 -0.0879976 6.37521 0.263992 6.73223C0.59084 7.06375 1.10626 7.08743 1.46005 6.80327L1.53866 6.73223L6 2.20711L10.4613 6.73223C10.7882 7.06375 11.3036 7.08743 11.6574 6.80327L11.736 6.73223C12.0629 6.40071 12.0862 5.87792 11.806 5.51908L11.736 5.43934L6.63733 0.267767Z" fill="#0F131A"/></svg>
+            </div>
+        </section>
+
+        <!-- 组件9: 出行信息 -->
+        <div class="info-card" style="margin-top: 18px;">
+            <div class="card-header-wrap"><h3 class="card-header">出行信息</h3></div>
+            <div class="info-list">
+                <div class="info-row">
+                    <span class="info-row__label">出行人</span><span class="info-row__value">韩梅梅</span>
+                    <a href="#" class="card-link"><span class="card-link__text">查看</span><svg class="card-link__icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.2322 13.3627C17.5638 13.6895 17.5874 14.2049 17.3033 14.5587L17.2322 14.6373L12.0607 19.736C11.7036 20.088 11.1248 20.088 10.7678 19.736C10.4362 19.4092 10.4126 18.8937 10.6967 18.54L10.7678 18.4613L15.2929 14L10.7678 9.53866C10.4362 9.21181 10.4126 8.69639 10.6967 8.34261L10.7678 8.26399C11.0993 7.93714 11.6221 7.9138 11.9809 8.19395L12.0607 8.26399L17.2322 13.3627Z" fill="#0F131A"/></svg></a>
+                </div>
+                <div class="info-row">
+                    <span class="info-row__label">联系人</span><span class="info-row__value">13832749988</span>
+                    <a href="#" class="card-link"><span class="card-link__text">查看</span><svg class="card-link__icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.2322 13.3627C17.5638 13.6895 17.5874 14.2049 17.3033 14.5587L17.2322 14.6373L12.0607 19.736C11.7036 20.088 11.1248 20.088 10.7678 19.736C10.4362 19.4092 10.4126 18.8937 10.6967 18.54L10.7678 18.4613L15.2929 14L10.7678 9.53866C10.4362 9.21181 10.4126 8.69639 10.6967 8.34261L10.7678 8.26399C11.0993 7.93714 11.6221 7.9138 11.9809 8.19395L12.0607 8.26399L17.2322 13.3627Z" fill="#0F131A"/></svg></a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 固定层：底部bar (组件11) -->
+    <nav class="bottom-action-bar">
+        <a href="#" class="action-item">
+            <div class="action-item__icon"><svg width="58" height="58" viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30.1225 10.0024H51.0004L50.5238 12.3355C49.9828 14.9863 49.0033 17.2281 48.1293 18.6431H50.9369L50.4906 20.5347C50.4456 20.8177 48.9904 27.1131 43.4154 30.3501C43.1734 35.299 41.367 39.7022 38.2641 42.8462C34.9701 46.1852 30.4694 47.9985 25.2494 47.9985C19.9717 47.9985 15.242 46.0939 11.9301 42.7251C8.64312 39.3821 6.97043 34.7421 7.0004 29.3071C7.0544 19.6982 13.8666 9.82151 30.1225 10.0024ZM29.7133 11.9985C22.9484 11.9986 17.4714 13.8854 13.8324 17.4644C10.7426 20.5023 9.02642 24.7121 9.0004 29.3179C8.9734 34.2459 10.4799 38.3968 13.3559 41.3228C16.3208 44.3387 20.5445 45.9985 25.2494 45.9985C29.8893 45.9985 33.8973 44.4228 36.8393 41.4409C39.5752 38.67 41.2013 34.6963 41.4184 30.2524L41.4721 29.1655L42.4115 28.6196C46.4155 26.2946 47.9739 22.0581 48.3969 20.6431H44.5424L46.4281 17.5923C47.3361 16.1224 48.1272 14.0383 48.5502 12.0024H30.1225C29.9855 12.0005 29.8492 11.9985 29.7133 11.9985ZM27.2826 25.8872C30.5146 25.8872 33.1439 28.7046 33.144 32.1655C33.144 35.6275 30.5146 38.4439 27.2826 38.4439H22.3393C19.1073 38.4439 16.477 35.6275 16.477 32.1655C16.477 28.7046 19.1073 25.8872 22.3393 25.8872H27.2826ZM22.3393 27.8872C20.2103 27.8872 18.477 29.8066 18.477 32.1655C18.477 34.5245 20.2103 36.4439 22.3393 36.4439H27.2826C29.4116 36.4439 31.144 34.5245 31.144 32.1655C31.1439 29.8066 29.4116 27.8872 27.2826 27.8872H22.3393ZM22.7143 31.1108C23.2931 31.1109 23.761 31.5827 23.7611 32.1655C23.7611 32.7485 23.2932 33.2222 22.7143 33.2222C22.1353 33.2222 21.6664 32.7485 21.6664 32.1655C21.6666 31.5827 22.1354 31.1108 22.7143 31.1108ZM26.9057 31.1108C27.4845 31.1109 27.9524 31.5827 27.9525 32.1655C27.9525 32.7485 27.4847 33.2222 26.9057 33.2222C26.3267 33.2222 25.8578 32.7485 25.8578 32.1655C25.858 31.5827 26.3268 31.1108 26.9057 31.1108ZM33.7162 22.6665C34.584 22.6668 35.2865 23.3757 35.2865 24.2495C35.2863 25.1241 34.5838 25.8332 33.7162 25.8335C32.8484 25.8335 32.1452 25.1243 32.1449 24.2495C32.1449 23.3755 32.8482 22.6665 33.7162 22.6665ZM16.9525 22.6665C17.8203 22.6668 18.5238 23.3747 18.5238 24.2495C18.5238 25.1234 17.8203 25.8323 16.9525 25.8325C16.0855 25.8325 15.3813 25.1235 15.3813 24.2495C15.3813 23.3745 16.0855 22.6665 16.9525 22.6665Z" fill="#0F131A"/></svg></div>
+            <div class="action-item__text-block"><span class="action-item__title">联系飞猪</span><span class="action-item__subtitle">24小时在线</span></div>
+        </a>
+        <div class="divider"></div>
+        <a href="#" class="action-item">
+            <div class="action-item__icon"><svg width="58" height="58" viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M28.4951 10C30.7894 10 33.0158 10.4482 35.1104 11.335C37.1365 12.1925 38.9531 13.4156 40.5117 14.9795C42.0703 16.5386 43.298 18.3609 44.1553 20.3828C44.9183 22.1761 45.3583 24.0663 45.4697 26.0127C47.72 26.1791 49.501 28.1101 49.501 30.4619V32.5381C49.501 34.6211 48.1036 36.374 46.2207 36.8633C45.9049 38.3962 45.4682 39.7025 44.1914 40.9814C42.9652 42.2227 40.9989 43.4149 37.4551 45.0352C37.4834 45.1859 37.5 45.341 37.5 45.5C37.5 46.8807 36.3807 48 35 48C33.6193 48 32.5 46.8807 32.5 45.5C32.5 44.1193 33.6193 43 35 43C35.4255 43 35.826 43.1065 36.1768 43.2939C39.7281 41.6952 41.6892 40.5489 42.7744 39.46C43.5502 38.6777 43.8765 37.9193 44.124 36.8721C42.2233 36.3958 40.8086 34.6343 40.8086 32.5381V30.4619C40.8086 28.6188 41.9019 27.0332 43.458 26.3535C43.1184 18.3934 36.5399 12.0225 28.5 12.0225C20.559 12.0225 14.043 18.2377 13.5566 26.0605C15.6165 26.4098 17.1924 28.2497 17.1924 30.4619V32.5381C17.1924 34.9988 15.2427 37 12.8457 37C10.4489 36.9998 8.5 34.9987 8.5 32.5381V30.4619C8.5 28.4768 9.76875 26.7914 11.5176 26.2139C11.6084 24.1965 12.05 22.2379 12.835 20.3828C13.6923 18.356 14.915 16.5386 16.4785 14.9795C18.042 13.4205 19.8586 12.1925 21.8799 11.335C23.9744 10.4482 26.2009 10 28.4951 10ZM12.8467 28.0967C11.577 28.0967 10.5432 29.1575 10.543 30.4609V32.5381C10.543 33.8417 11.5768 34.9033 12.8467 34.9033C14.1164 34.9032 15.1504 33.8416 15.1504 32.5381V30.4609C15.1501 29.1576 14.1163 28.0968 12.8467 28.0967ZM45.1533 28.0967C43.8836 28.0967 42.8499 29.1575 42.8496 30.4609V32.5381C42.8496 33.8417 43.8835 34.9033 45.1533 34.9033C46.4231 34.9032 47.457 33.8416 47.457 32.5381V30.4609C47.4519 29.1576 46.4229 28.0968 45.1533 28.0967Z" fill="#0F131A"/></svg></div>
+            <div class="action-item__text-block"><span class="action-item__title">联系商家</span><span class="action-item__subtitle">咨询时间 09:00-23:00</span></div>
+        </a>
+    </nav>
+
+    <script>
+        // ===== 750 设计稿自适应缩放 =====
+        // 通过 zoom 缩放 body，使 750px 设计稿适配任意宽度的 iframe / viewport
+        const DESIGN_WIDTH = 750;
+        function applyDesignScale() {
+            const vw = document.documentElement.clientWidth || window.innerWidth;
+            // 防护：iframe 刚加载时 vw 可能为 0，此时不能设 zoom=0，否则 body 会整个不可见
+            if (!vw) return;
+            const scale = vw / DESIGN_WIDTH;
+            // 优先使用 zoom（Chrome/Safari/Edge/新版 Firefox 支持，且不破坏 position:fixed）
+            document.body.style.zoom = String(scale);
+        }
+        applyDesignScale();
+        window.addEventListener('resize', applyDesignScale);
+        window.addEventListener('orientationchange', applyDesignScale);
+
+        // ===== 状态栏时间：HH:MM，每分钟更新（与 planner-titlebar 一致） =====
+        const detailStatusTimeEl = document.getElementById('detailEntryStatusBarTime');
+        const renderDetailStatusTime = () => {
+            if (!detailStatusTimeEl) return;
+            const d = new Date();
+            const hh = d.getHours();
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            detailStatusTimeEl.textContent = `${hh}:${mm}`;
+        };
+        renderDetailStatusTime();
+        const msToNextMin = 60000 - (Date.now() % 60000);
+        setTimeout(() => {
+            renderDetailStatusTime();
+            setInterval(renderDetailStatusTime, 60000);
+        }, msToNextMin);
+
+        // ===== 顶部状态栏滚动交互（阈值按缩放比例换算） =====
+        const header = document.getElementById('mainHeader');
+        window.addEventListener('scroll', () => {
+            const vw = document.documentElement.clientWidth || window.innerWidth;
+            const scale = vw / DESIGN_WIDTH;
+            if (window.scrollY > 180 * scale) {
+                header.classList.add('is-scrolled');
+            } else {
+                header.classList.remove('is-scrolled');
+            }
+        });
+    </script>
+
+</body>
+</html>
+        });
+    </script>
+
+</body>
+</html>
