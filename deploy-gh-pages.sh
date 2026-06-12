@@ -7,7 +7,7 @@ echo "🚀 开始准备GitHub Pages部署..."
 
 # 0. 检查资源路径(防止绝对路径导致的404错误)
 echo "🔍 检查资源路径..."
-ABSOLUTE_PATHS=$(grep -r 'fetch\(["'\''']/assets/' src/ --include="*.js" --include="*.mjs" 2>/dev/null || true)
+ABSOLUTE_PATHS=$(grep -rE 'fetch\(["'"'"']/assets/' src/ --include="*.js" --include="*.mjs" 2>/dev/null || true)
 if [ -n "$ABSOLUTE_PATHS" ]; then
   echo "❌ 发现绝对路径引用,这会导致GitHub Pages 404错误:"
   echo "$ABSOLUTE_PATHS"
