@@ -717,7 +717,7 @@ body {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between; /* 时间靠左，信号靠右 */
   padding: 0 16px;
   box-sizing: border-box;
   pointer-events: none;
