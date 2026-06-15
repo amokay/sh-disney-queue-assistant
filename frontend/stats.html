@@ -197,8 +197,55 @@
     <div class="stats-content">
       <!-- Flag Counter 统计 -->
       <div class="flag-counter-section">
-        <h2> 全球访客分布</h2>
+        <h2>🌍 全球访客分布</h2>
         <img src="https://s01.flagcounter.com/count/nX5/bg_FFFFFF/txt_000000/border_CCCCCC/columns_4/maxflags_20/viewers_0/labels_1/pageviews_1/flags_1/percent_1/" alt="Visitor Counter" style="border: 0;">
+      </div>
+
+      <!-- 详细访客信息 -->
+      <div class="visitor-details" style="margin-top: 30px; background: #f8f9fa; border-radius: 12px; padding: 20px;">
+        <h2 style="margin-bottom: 20px; color: #333; font-size: 20px;">📱 当前访问者详细信息</h2>
+        
+        <div class="info-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+          <div class="info-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">IP 地址</div>
+            <div id="ipAddress" style="font-size: 16px; font-weight: bold; color: #1E40AF;">加载中...</div>
+          </div>
+          
+          <div class="info-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">国家/地区</div>
+            <div id="country" style="font-size: 16px; font-weight: bold; color: #1E40AF;">加载中...</div>
+          </div>
+          
+          <div class="info-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">操作系统</div>
+            <div id="osInfo" style="font-size: 16px; font-weight: bold; color: #1E40AF;">检测中...</div>
+          </div>
+          
+          <div class="info-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">浏览器</div>
+            <div id="browserInfo" style="font-size: 16px; font-weight: bold; color: #1E40AF;">检测中...</div>
+          </div>
+          
+          <div class="info-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">屏幕分辨率</div>
+            <div id="screenResolution" style="font-size: 16px; font-weight: bold; color: #1E40AF;">检测中...</div>
+          </div>
+          
+          <div class="info-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">视口大小</div>
+            <div id="viewportSize" style="font-size: 16px; font-weight: bold; color: #1E40AF;">检测中...</div>
+          </div>
+          
+          <div class="info-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">设备类型</div>
+            <div id="deviceType" style="font-size: 16px; font-weight: bold; color: #1E40AF;">检测中...</div>
+          </div>
+          
+          <div class="info-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="font-size: 12px; color: #999; margin-bottom: 5px;">语言设置</div>
+            <div id="language" style="font-size: 16px; font-weight: bold; color: #1E40AF;">检测中...</div>
+          </div>
+        </div>
       </div>
 
       <!-- 快速刷新按钮 -->
@@ -221,6 +268,93 @@
   </div>
 
   <script>
+    // 获取访客详细信息
+    async function fetchVisitorInfo() {
+      try {
+        // 使用 ipapi.co 免费 API 获取 IP、国家等信息
+        const response = await fetch('https://ipapi.co/json/');
+        if (response.ok) {
+          const data = await response.json();
+          
+          document.getElementById('ipAddress').textContent = data.ip || '未知';
+          document.getElementById('country').textContent = `${data.country_name || '未知'} (${data.country_code || '-'})`;
+        } else {
+          document.getElementById('ipAddress').textContent = '无法获取';
+          document.getElementById('country').textContent = '无法获取';
+        }
+      } catch (error) {
+        console.error('获取IP信息失败:', error);
+        document.getElementById('ipAddress').textContent = '加载失败';
+        document.getElementById('country').textContent = '加载失败';
+      }
+    }
+
+    // 检测操作系统
+    function detectOS() {
+      const userAgent = navigator.userAgent;
+      let os = '未知';
+      
+      if (userAgent.indexOf('Win') !== -1) os = 'Windows';
+      else if (userAgent.indexOf('Mac') !== -1) os = 'macOS';
+      else if (userAgent.indexOf('Linux') !== -1) os = 'Linux';
+      else if (userAgent.indexOf('Android') !== -1) os = 'Android';
+      else if (userAgent.indexOf('like Mac') !== -1) os = 'iOS';
+      
+      return os;
+    }
+
+    // 检测浏览器
+    function detectBrowser() {
+      const userAgent = navigator.userAgent;
+      let browser = '未知';
+      
+      if (userAgent.indexOf('Firefox') !== -1) browser = 'Firefox';
+      else if (userAgent.indexOf('SamsungBrowser') !== -1) browser = 'Samsung Internet';
+      else if (userAgent.indexOf('Opera') !== -1 || userAgent.indexOf('OPR') !== -1) browser = 'Opera';
+      else if (userAgent.indexOf('Trident') !== -1) browser = 'Internet Explorer';
+      else if (userAgent.indexOf('Edge') !== -1) browser = 'Edge';
+      else if (userAgent.indexOf('Chrome') !== -1) browser = 'Chrome';
+      else if (userAgent.indexOf('Safari') !== -1) browser = 'Safari';
+      
+      return browser;
+    }
+
+    // 检测设备类型
+    function detectDeviceType() {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const width = window.innerWidth;
+      
+      if (/tablet|ipad|playbook|silk/i.test(userAgent)) return '平板';
+      if (/mobile|iphone|ipod|android.*mobile|windows.*phone|blackberry.*mobile/i.test(userAgent)) return '手机';
+      if (width < 768) return '手机';
+      if (width < 1024) return '平板';
+      return '桌面电脑';
+    }
+
+    // 显示所有设备信息
+    function displayDeviceInfo() {
+      // IP和国家
+      fetchVisitorInfo();
+      
+      // 操作系统
+      document.getElementById('osInfo').textContent = detectOS();
+      
+      // 浏览器
+      document.getElementById('browserInfo').textContent = detectBrowser();
+      
+      // 屏幕分辨率
+      document.getElementById('screenResolution').textContent = `${window.screen.width} x ${window.screen.height}`;
+      
+      // 视口大小
+      document.getElementById('viewportSize').textContent = `${window.innerWidth} x ${window.innerHeight}`;
+      
+      // 设备类型
+      document.getElementById('deviceType').textContent = detectDeviceType();
+      
+      // 语言
+      document.getElementById('language').textContent = navigator.language || navigator.userLanguage || '未知';
+    }
+
     // 显示最后更新时间
     function updateTimestamp() {
       const now = new Date();
@@ -235,7 +369,8 @@
       document.getElementById('updateTime').textContent = timeString;
     }
 
-    // 初始化时间戳
+    // 初始化
+    displayDeviceInfo();
     updateTimestamp();
 
     // 自动刷新功能
