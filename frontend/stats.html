@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>访客统计 - 私密</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .stats-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 900px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .stats-header {
+      background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .stats-header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .stats-header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    .stats-content {
+      padding: 30px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-number {
+      font-size: 48px;
+      font-weight: bold;
+      color: #1E40AF;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .flag-counter-section {
+      text-align: center;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+    }
+
+    .flag-counter-section h2 {
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 20px;
+    }
+
+    .refresh-btn {
+      background: #1E40AF;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 20px;
+      transition: background 0.3s ease;
+    }
+
+    .refresh-btn:hover {
+      background: #1e3a8a;
+    }
+
+    .auto-refresh {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #1E40AF;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    .last-update {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #999;
+    }
+
+    @media (max-width: 600px) {
+      .stats-header h1 {
+        font-size: 24px;
+      }
+      
+      .stat-number {
+        font-size: 36px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stats-container">
+    <div class="stats-header">
+      <h1>📊 迪士尼助手访客统计</h1>
+      <p>实时访问数据监控面板</p>
+    </div>
+
+    <div class="stats-content">
+      <!-- Flag Counter 统计 -->
+      <div class="flag-counter-section">
+        <h2> 全球访客分布</h2>
+        <img src="https://s01.flagcounter.com/count/nX5/bg_FFFFFF/txt_000000/border_CCCCCC/columns_4/maxflags_20/viewers_0/labels_1/pageviews_1/flags_1/percent_1/" alt="Visitor Counter" style="border: 0;">
+      </div>
+
+      <!-- 快速刷新按钮 -->
+      <div style="text-align: center;">
+        <button class="refresh-btn" onclick="location.reload()">🔄 刷新统计数据</button>
+        
+        <div class="auto-refresh">
+          <span>自动刷新 (每30秒):</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="autoRefresh" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="last-update" id="lastUpdate">
+        最后更新: <span id="updateTime">--</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 显示最后更新时间
+    function updateTimestamp() {
+      const now = new Date();
+      const timeString = now.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      document.getElementById('updateTime').textContent = timeString;
+    }
+
+    // 初始化时间戳
+    updateTimestamp();
+
+    // 自动刷新功能
+    let autoRefreshInterval;
+    const autoRefreshCheckbox = document.getElementById('autoRefresh');
+
+    function startAutoRefresh() {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      autoRefreshInterval = setInterval(() => {
+        location.reload();
+      }, 30000); // 30秒刷新一次
+    }
+
+    function stopAutoRefresh() {
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+      }
+    }
+
+    autoRefreshCheckbox.addEventListener('change', () => {
+      if (autoRefreshCheckbox.checked) {
+        startAutoRefresh();
+      } else {
+        stopAutoRefresh();
+      }
+    });
+
+    // 默认启动自动刷新
+    startAutoRefresh();
+
+    // 页面可见性变化时处理自动刷新
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopAutoRefresh();
+      } else if (autoRefreshCheckbox.checked) {
+        startAutoRefresh();
+      }
+    });
+
+    console.log('📊 访客统计页面已加载');
+    console.log('💡 提示: 这是一个私密页面，请勿分享URL给他人');
+  </script>
+</body>
+</html>
